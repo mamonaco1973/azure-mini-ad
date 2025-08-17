@@ -24,7 +24,7 @@ data "azurerm_client_config" "current" {}
 variable "resource_group_name" {
   description = "The name of the Azure resource group"
   type        = string
-  default     = "ad-resource-group"
+  default     = "mini-ad-rg"
 }
 
 variable "resource_group_location" {
@@ -37,14 +37,6 @@ variable "resource_group_location" {
 resource "azurerm_resource_group" "ad" {
   name     = var.resource_group_name  # Name of the resource group from variable
   location = var.resource_group_location  # Location from variable
-}
-
-# Fetch from this cli and set the value 
-# PRIMARY_DOMAIN=$(az rest --method get --url "https://graph.microsoft.com/v1.0/domains" --query "value[?isDefault].id" --output tsv)
-
-variable "azure_domain" {
-  description = "The default Azure AD domain"
-#  default     = "mamonaco1973gmail.onmicrosoft.com"
 }
 
 
