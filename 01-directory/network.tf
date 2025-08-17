@@ -13,8 +13,8 @@ resource "azurerm_subnet" "vm_subnet" {
   address_prefixes     = ["10.0.0.0/25"]                      # IP range for the subnet
 }
 
-resource "azurerm_subnet" "aadds_subnet" {
-  name                 = "aadds-subnet"                       # Name of the subnet
+resource "azurerm_subnet" "mini_ad_subnet" {
+  name                 = "mini-ad-subnet"                     # Name of the subnet
   resource_group_name  = azurerm_resource_group.ad.name       # Links to the resource group
   virtual_network_name = azurerm_virtual_network.ad_vnet.name # Links to the VNet
   address_prefixes     = ["10.0.0.128/25"]                    # IP range for the subnet
