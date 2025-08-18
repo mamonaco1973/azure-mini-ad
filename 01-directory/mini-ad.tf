@@ -41,7 +41,7 @@ resource "azurerm_linux_virtual_machine" "mini_ad_instance" {
     version   = "latest"           # Use the latest version available
   }
 
-  custom_data = templatefile("./scripts/mini-ad.sh.template", {
+  custom_data = base64encode(templatefile("./scripts/mini-ad.sh.template", {
     HOSTNAME_DC        = "ad1"
     DNS_ZONE           = var.dns_zone
     REALM              = var.realm
@@ -49,7 +49,7 @@ resource "azurerm_linux_virtual_machine" "mini_ad_instance" {
     ADMINISTRATOR_PASS = random_password.admin_password.result
     ADMIN_USER_PASS    = random_password.admin_password.result
     VAULT_NAME         = azurerm_key_vault.ad_key_vault.name
-  })
+  }))
 
   # --- Assign a system-assigned managed identity to the VM ---
   identity {
