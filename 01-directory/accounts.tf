@@ -98,10 +98,34 @@ resource "random_password" "sysadmin_password" {
 # Create secret for sysadmin's credentials
 
 resource "azurerm_key_vault_secret" "sysadmin_secret" {
-  name = "sysadmin-ad-credentials"
+  name = "sysadmin-credentials"
   value = jsonencode({
     username = "sysadmin"
     password = random_password.sysadmin_password.result
+  })
+  key_vault_id = azurerm_key_vault.ad_key_vault.id
+  depends_on   = [azurerm_role_assignment.kv_role_assignment]
+  content_type = "application/json"
+}
+
+
+# --- User: Admin ---
+
+# Generate a random password for AD Admin
+
+resource "random_password" "admin_password" {
+  length           = 24
+  special          = true
+  override_special = "-_."
+}
+
+# Create secret for AD Admin credentials
+
+resource "azurerm_key_vault_secret" "admin_secret" {
+  name = "admin-credentials"
+  value = jsonencode({
+    username = "MCLOUD\\Admin"
+    password = random_password.admin_password.result
   })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
   depends_on   = [azurerm_role_assignment.kv_role_assignment]
