@@ -34,3 +34,13 @@ variable "netbios" {
   type        = string
   default     = "MCLOUD"
 }
+
+# --------------------------------------------------------------------------------
+# User base DN for LDAP
+# --------------------------------------------------------------------------------
+
+variable "user_base_dn" {
+  description = "User base DN for LDAP (e.g., CN=Users,DC=mcloud,DC=mikecloud,DC=com)"
+  type        = string
+  default     = "CN=Users,DC=mcloud,DC=mikecloud,DC=com"
+}

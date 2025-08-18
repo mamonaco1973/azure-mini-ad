@@ -62,32 +62,20 @@ resource "azurerm_linux_virtual_machine" "mini_ad_instance" {
   # Bootstrap configuration (cloud-init script encoded in base64)
   # Template injects variables such as domain details and admin passwords.
   custom_data = base64encode(templatefile("./scripts/mini-ad.sh.template", {
-    HOSTNAME_DC        = "ad1"                                       # Hostname for DC
-    DNS_ZONE           = var.dns_zone                                # DNS zone (e.g., mcloud.mikecloud.com)
-    REALM              = var.realm                                   # Kerberos realm
-    NETBIOS            = var.netbios                                 # NetBIOS name
-    ADMINISTRATOR_PASS = random_password.admin_password.result        # AD Admin password
-    ADMIN_USER_PASS    = random_password.admin_password.result        # Domain user password
-    VAULT_NAME         = azurerm_key_vault.ad_key_vault.name          # Key Vault for secrets
+    HOSTNAME_DC        = "ad1"                                 # Hostname for DC
+    DNS_ZONE           = var.dns_zone                          # DNS zone (e.g., mcloud.mikecloud.com)
+    REALM              = var.realm                             # Kerberos realm
+    NETBIOS            = var.netbios                           # NetBIOS name
+    ADMINISTRATOR_PASS = random_password.admin_password.result # AD Admin password
+    ADMIN_USER_PASS    = random_password.admin_password.result # Domain user password
+    USER_BASE_DN       = var.user_base_dn                      # User base DN for LDAP
+    USERS_JSON         = local.users_json                      # User accounts JSON
   }))
 
-  # Assign a managed identity so VM can securely fetch Key Vault secrets
+  # Assign a managed identity 
   identity {
     type = "SystemAssigned"
   }
-
-  # Ensure Key Vault exists before VM provisioning begins
-  depends_on = [azurerm_key_vault.ad_key_vault]
-}
-
-# --------------------------------------------------------------------------------------------------
-# Role Assignment: Grant Linux VM managed identity access to Key Vault secrets
-# Role: "Key Vault Secrets Officer" → allows read/write of secrets
-# --------------------------------------------------------------------------------------------------
-resource "azurerm_role_assignment" "vm_mini_ad_key_vault_secrets_user" {
-  scope                = azurerm_key_vault.ad_key_vault.id                                       # Scope: Key Vault
-  role_definition_name = "Key Vault Secrets Officer"                                             # Built-in Azure role
-  principal_id         = azurerm_linux_virtual_machine.mini_ad_instance.identity[0].principal_id # VM managed identity
 }
 
 # ==================================================================================================
@@ -108,4 +96,24 @@ resource "azurerm_virtual_network_dns_servers" "mini_ad_dns_server" {
   virtual_network_id = azurerm_virtual_network.ad_vnet.id
   dns_servers        = [azurerm_network_interface.mini_ad_vm_nic.ip_configuration[0].private_ip_address]
   depends_on         = [time_sleep.wait_for_mini_ad]
+}
+
+
+# -------------------------------------------------------------------
+# Local variable: users_json
+# - Renders a JSON template file (`users.json.template`)
+# - Injects dynamically generated random passwords into the template
+# - Produces a single JSON blob you can pass into VM bootstrap
+# -------------------------------------------------------------------
+locals {
+  users_json = templatefile("./scripts/users.json.template", {
+    USER_BASE_DN    = var.user_base_dn                       # User base DN for LDAP
+    DNS_ZONE        = var.dns_zone                           # DNS zone (e.g., mcloud.mikecloud.com)
+    REALM           = var.realm                              # Kerberos realm
+    NETBIOS         = var.netbios                            # NetBIOS name
+    jsmith_password = random_password.jsmith_password.result # Insert John Smith's random password
+    edavis_password = random_password.edavis_password.result # Insert Emily Davis's random password
+    rpatel_password = random_password.rpatel_password.result # Insert Raj Patel's random password
+    akumar_password = random_password.akumar_password.result # Insert Amit Kumar's random password
+  })
 }

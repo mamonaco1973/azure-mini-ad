@@ -17,9 +17,9 @@
 # Ensures uniqueness across subscriptions/regions since Key Vault names must be globally unique.
 # --------------------------------------------------------------------------------------------------
 resource "random_string" "key_vault_suffix" {
-  length  = 8      # 8-character random suffix
-  special = false  # Only alphanumeric
-  upper   = false  # Lowercase only
+  length  = 8     # 8-character random suffix
+  special = false # Only alphanumeric
+  upper   = false # Lowercase only
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ resource "azurerm_key_vault" "ad_key_vault" {
 # This ensures Terraform (running under the current identity) can populate user credentials into Key Vault.
 # --------------------------------------------------------------------------------------------------
 resource "azurerm_role_assignment" "kv_role_assignment" {
-  scope                = azurerm_key_vault.ad_key_vault.id                   # Scope = Key Vault
-  role_definition_name = "Key Vault Secrets Officer"                         # Predefined Azure RBAC role
-  principal_id         = data.azurerm_client_config.current.object_id        # Current client identity
+  scope                = azurerm_key_vault.ad_key_vault.id            # Scope = Key Vault
+  role_definition_name = "Key Vault Secrets Officer"                  # Predefined Azure RBAC role
+  principal_id         = data.azurerm_client_config.current.object_id # Current client identity
 }

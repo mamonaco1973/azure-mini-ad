@@ -16,20 +16,20 @@
 # Generates a password and stores AD credentials in Key Vault.
 # --------------------------------------------------------------------------------------------------
 resource "random_password" "jsmith_password" {
-  length           = 24                     # Secure 24-char password
-  special          = true                   # Include special characters
-  override_special = "!@#%"                 # Restrict to safe AD-compatible characters
+  length           = 24     # Secure 24-char password
+  special          = true   # Include special characters
+  override_special = "!@#%" # Restrict to safe AD-compatible characters
 }
 
 resource "azurerm_key_vault_secret" "jsmith_secret" {
-  name         = "jsmith-ad-credentials"    # Key Vault secret name
-  value        = jsonencode({               # Store as JSON (username + password)
-                   username = "jsmith@${var.dns_zone}"
-                   password = random_password.jsmith_password.result
-                 })
+  name = "jsmith-ad-credentials" # Key Vault secret name
+  value = jsonencode({           # Store as JSON (username + password)
+    username = "jsmith@${var.dns_zone}"
+    password = random_password.jsmith_password.result
+  })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
   depends_on   = [azurerm_role_assignment.kv_role_assignment]
-  content_type = "application/json"         # Marks secret type as JSON
+  content_type = "application/json" # Marks secret type as JSON
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -42,11 +42,11 @@ resource "random_password" "edavis_password" {
 }
 
 resource "azurerm_key_vault_secret" "edavis_secret" {
-  name         = "edavis-ad-credentials"
-  value        = jsonencode({
-                   username = "edavis@${var.dns_zone}"
-                   password = random_password.edavis_password.result
-                 })
+  name = "edavis-ad-credentials"
+  value = jsonencode({
+    username = "edavis@${var.dns_zone}"
+    password = random_password.edavis_password.result
+  })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
   depends_on   = [azurerm_role_assignment.kv_role_assignment]
   content_type = "application/json"
@@ -62,11 +62,11 @@ resource "random_password" "rpatel_password" {
 }
 
 resource "azurerm_key_vault_secret" "rpatel_secret" {
-  name         = "rpatel-ad-credentials"
-  value        = jsonencode({
-                   username = "rpatel@${var.dns_zone}"
-                   password = random_password.rpatel_password.result
-                 })
+  name = "rpatel-ad-credentials"
+  value = jsonencode({
+    username = "rpatel@${var.dns_zone}"
+    password = random_password.rpatel_password.result
+  })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
   depends_on   = [azurerm_role_assignment.kv_role_assignment]
   content_type = "application/json"
@@ -82,11 +82,11 @@ resource "random_password" "akumar_password" {
 }
 
 resource "azurerm_key_vault_secret" "akumar_secret" {
-  name         = "akumar-ad-credentials"
-  value        = jsonencode({
-                   username = "akumar@${var.dns_zone}"
-                   password = random_password.akumar_password.result
-                 })
+  name = "akumar-ad-credentials"
+  value = jsonencode({
+    username = "akumar@${var.dns_zone}"
+    password = random_password.akumar_password.result
+  })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
   depends_on   = [azurerm_role_assignment.kv_role_assignment]
   content_type = "application/json"
@@ -105,11 +105,11 @@ resource "random_password" "sysadmin_password" {
 }
 
 resource "azurerm_key_vault_secret" "sysadmin_secret" {
-  name         = "sysadmin-credentials"
-  value        = jsonencode({
-                   username = "sysadmin"
-                   password = random_password.sysadmin_password.result
-                 })
+  name = "sysadmin-credentials"
+  value = jsonencode({
+    username = "sysadmin"
+    password = random_password.sysadmin_password.result
+  })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
   depends_on   = [azurerm_role_assignment.kv_role_assignment]
   content_type = "application/json"
@@ -124,15 +124,15 @@ resource "azurerm_key_vault_secret" "sysadmin_secret" {
 resource "random_password" "admin_password" {
   length           = 24
   special          = true
-  override_special = "-_."                   # Different set of allowed special characters
+  override_special = "-_." # Different set of allowed special characters
 }
 
 resource "azurerm_key_vault_secret" "admin_secret" {
-  name         = "admin-ad-credentials"
-  value        = jsonencode({
-                   username = "Admin@${var.dns_zone}"
-                   password = random_password.admin_password.result
-                 })
+  name = "admin-ad-credentials"
+  value = jsonencode({
+    username = "Admin@${var.dns_zone}"
+    password = random_password.admin_password.result
+  })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
   depends_on   = [azurerm_role_assignment.kv_role_assignment]
   content_type = "application/json"

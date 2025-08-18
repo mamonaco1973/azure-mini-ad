@@ -1,8 +1,8 @@
 {
   "domain": {
-    "dnsZone": "mcloud.mikecloud.com",
-    "netbios": "MCLOUD",
-    "userBaseDn": "CN=Users,DC=mcloud,DC=mikecloud,DC=com"
+    "dnsZone": "${DNS_ZONE}",
+    "netbios": "${NETBIOS}",
+    "userBaseDn": "${USER_BASE_DN}"
   },
   "groups": [
     { "name": "mcloud-users", "gidNumber": 10001 },
@@ -35,7 +35,7 @@
       "username": "rpatel",
       "givenName": "Raj",
       "surname": "Patel",
-      "password": "SecretPass123!",
+      "password": "${rpatel_password}",
       "uidNumber": 10003,
       "gidNumber": 10001,
       "primaryGroup": "mcloud-users",
@@ -45,7 +45,7 @@
       "username": "akumar",
       "givenName": "Amit",
       "surname": "Kumar",
-      "password": "SecretPass123!",
+      "password": "${akumar_password}",
       "uidNumber": 10004,
       "gidNumber": 10001,
       "primaryGroup": "mcloud-users",

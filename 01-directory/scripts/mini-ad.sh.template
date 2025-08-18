@@ -9,7 +9,14 @@ NETBIOS="${NETBIOS}"
 HOSTNAME_DC="${HOSTNAME_DC}"
 ADMINISTRATOR_PASS="${ADMINISTRATOR_PASS}"
 ADMIN_USER_PASS="${ADMIN_USER_PASS}"
-VAULT_NAME="${VAULT_NAME}"
+
+#--------------------------------------------------------------------
+# Write the seeded users/groups JSON to a temp file
+#--------------------------------------------------------------------
+cat > /root/seed_users.json <<'EOF'
+${USERS_JSON}
+EOF
+chmod 600 /root/seed_users.json
 
 #--------------------------------------------------------------------
 # Install necessary packages for Active Directory Domain Controller
@@ -18,24 +25,6 @@ VAULT_NAME="${VAULT_NAME}"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update >> /root/userdata.log 2>&1
 apt-get install -y samba krb5-user winbind smbclient dnsutils acl attr chrony unzip ldb-tools >> /root/userdata.log 2>&1
-
-# ---------------------------------------------------------------------------------
-# Install AZ CLI
-# ---------------------------------------------------------------------------------
-
-curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/keyrings/microsoft-azure-cli-archive-keyring.gpg > /dev/null
-AZ_REPO=$(lsb_release -cs)
-echo "deb [signed-by=/etc/apt/keyrings/microsoft-azure-cli-archive-keyring.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" \
-    | tee /etc/apt/sources.list.d/azure-cli.list
-apt-get update -y
-apt-get install -y azure-cli
-
-#--------------------------------------------------------------------
-# Signal that mini-AD initialization is not complete
-#--------------------------------------------------------------------
-
-az login --identity --allow-no-subscriptions
-az keyvault secret set --vault-name "$VAULT_NAME" --name "initialized-${NETBIOS}" --value "false"
 
 #--------------------------------------------------------------------
 # Prepare secrets file with restrictive permissions
@@ -194,93 +183,68 @@ fi
 } >> "$SECRETS_FILE"
 
 #--------------------------------------------------------------------
-# Create some example groups and users - suitable for use with linux
-# and windows concurrently.
+# JSON-driven Groups and Users Seeding
 #--------------------------------------------------------------------
+SEED_FILE="/root/seed_users.json"
 
-# Base gidNumber for the first group
-BASE_GID=10001
+# Load domain info from JSON
+DNS_ZONE=$(jq -r '.domain.dnsZone' "$SEED_FILE")
+NETBIOS=$(jq -r '.domain.netbios' "$SEED_FILE")
+USER_BASE_DN=$(jq -r '.domain.userBaseDn // empty' "$SEED_FILE")
 
-# Create groups if they don't exist, incrementing gidNumber for each new one
-CURRENT_GID=$BASE_GID
+# Default userBaseDn if not provided
+if [ -z "$USER_BASE_DN" ]; then
+  DOMAIN_DN=$(echo "$DNS_ZONE" | awk -F. '{ for (i=1; i<=NF; i++) printf "DC=%s%s", $i, (i<NF?",":"") }')
+  USER_BASE_DN="CN=Users,$DOMAIN_DN"
+fi
 
-for group in "mcloud-users" "us" "india" "linux-admins"; do
-    if ! samba-tool group show "$group" >/dev/null 2>&1; then
-        echo "Creating group: $group (gidNumber=$CURRENT_GID)"
-        samba-tool group add "$group" \
+# -------------------------------------------------------------------
+# Create Groups
+# -------------------------------------------------------------------
+jq -c '.groups[]' "$SEED_FILE" | while read -r group; do
+    NAME=$(echo "$group" | jq -r .name)
+    GID=$(echo "$group" | jq -r .gidNumber)
+
+    if ! samba-tool group show "$NAME" >/dev/null 2>&1; then
+        echo "Creating group: $NAME (gidNumber=$GID)"
+        samba-tool group add "$NAME" \
             --nis-domain="${NETBIOS}" \
-            --gid-number="$CURRENT_GID" \
-            --description="Sample Group - $group" >> /root/ad_group_attributes.log 2>&1
-        ((CURRENT_GID++)) 
+            --gid-number="$GID" \
+            --description="Sample Group - $NAME" >> /root/ad_group_attributes.log 2>&1
     fi
 done
 
-#--------------------------------------------------------------------
-# Function: get_secret_password
-# Reads a secret from AWS Secrets Manager
-#--------------------------------------------------------------------
-
-# --------------------------------------------------------------------
-# Get secret value from Azure Key Vault
-# Usage: get_secret_password <secret_name>
-# Requires: VAULT_NAME environment variable set
-# --------------------------------------------------------------------
-get_secret_password() {
-    local secret_name="$1"
-
-    az keyvault secret show \
-        --vault-name "${VAULT_NAME}" \
-        --name "$secret_name" \
-        --query value \
-        -o tsv | jq -r '.password'
-}
-
-#---------------------------------------------------------------------------------
-# Function: create_ad_user
-# Purpose : Creates an Active Directory user in Samba 4 and 
-#           configures UNIX (RFC2307) attributes.
-#
-# Arguments:
-#   $1  - USERNAME       (e.g., jsmith)
-#   $2  - GIVENNAME      (First name, e.g., John)
-#   $3  - SURNAME        (Last name, e.g., Smith)
-#   $4  - PASSWORD       (User password)
-#   $5  - UID_NUMBER     (Unique numeric UID for UNIX systems)
-#   $6  - GID_NUMBER     (Primary group GID for UNIX systems)
-#   $7  - PRIMARY_GROUP  (Name of the primary AD group)
-#
-# Notes:
-#   - Adds user to the specified PRIMARY_GROUP.
-#   - Directly sets RFC2307 attributes in LDAP (uid, uidNumber, gidNumber, etc.).
-#   - Ensures the login shell and home directory are set for UNIX access.
-#-----------------------------------------------------------------------------------
-
-create_ad_user() {
-    local USERNAME="$1"
-    local GIVENNAME="$2"
-    local SURNAME="$3"
-    local PASSWORD="$4"
-    local UID_NUMBER="$5"
-    local GID_NUMBER="$6"
-    local PRIMARY_GROUP="$7"
+# -------------------------------------------------------------------
+# Create Users
+# -------------------------------------------------------------------
+jq -c '.users[]' "$SEED_FILE" | while read -r user; do
+    USERNAME=$(echo "$user" | jq -r .username)
+    GIVENNAME=$(echo "$user" | jq -r .givenName)
+    SURNAME=$(echo "$user" | jq -r .surname)
+    PASSWORD=$(echo "$user" | jq -r .password)
+    UID_NUMBER=$(echo "$user" | jq -r .uidNumber)
+    GID_NUMBER=$(echo "$user" | jq -r .gidNumber)
+    PRIMARY_GROUP=$(echo "$user" | jq -r .primaryGroup)
+    EXTRA_GROUPS=$(echo "$user" | jq -r '.extraGroups[]?')
 
     DISPLAYNAME="$GIVENNAME $SURNAME"
-    EMAIL="$USERNAME@${DNS_ZONE}"
-    NIS_DOMAIN="${NETBIOS}"
+    EMAIL="$USERNAME@$DNS_ZONE"
 
-    # 1. Create the user
-    samba-tool user create "$USERNAME" "$PASSWORD" \
-        --given-name="$GIVENNAME" \
-        --surname="$SURNAME" \
-        --mail-address="$EMAIL" \
-        --description="Sample User - $DISPLAYNAME" >> /root/ad_user_attributes.log 2>&1
+    # If user doesn't already exist, create
+    if ! samba-tool user show "$USERNAME" >/dev/null 2>&1; then
+        echo "Creating user: $USERNAME"
+        samba-tool user create "$USERNAME" "$PASSWORD" \
+            --given-name="$GIVENNAME" \
+            --surname="$SURNAME" \
+            --mail-address="$EMAIL" \
+            --description="Sample User - $DISPLAYNAME" >> /root/ad_user_attributes.log 2>&1
 
-    # 2. Add to primary group
-    samba-tool group addmembers "$PRIMARY_GROUP" "$USERNAME" >> /root/ad_user_attributes.log 2>&1
+        # Add to primary group
+        samba-tool group addmembers "$PRIMARY_GROUP" "$USERNAME" >> /root/ad_user_attributes.log 2>&1
 
-    # 3. Set Unix attributes (including uid and gid) directly in LDAP
-    ldbmodify -H /var/lib/samba/private/sam.ldb <<EOF
-dn: CN=$DISPLAYNAME,CN=Users,DC=mcloud,DC=mikecloud,DC=com
+        # Add RFC2307 / UNIX attributes
+        ldbmodify -H /var/lib/samba/private/sam.ldb <<EOF
+dn: CN=$DISPLAYNAME,$USER_BASE_DN
 changetype: modify
 add: objectClass
 objectClass: posixAccount
@@ -301,34 +265,15 @@ replace: unixHomeDirectory
 unixHomeDirectory: /home/$USERNAME
 -
 replace: msSFU30NisDomain
-msSFU30NisDomain: $NIS_DOMAIN
+msSFU30NisDomain: $NETBIOS
 EOF
+    fi
 
-    # 4. Verify attributes
-    samba-tool user show "$USERNAME" | egrep "uid:|uidNumber|gidNumber|loginShell|unixHomeDirectory" >> /root/ad_user_attributes.log 2>&1
-}
-
-# Create sample domain users
-
-create_ad_user "jsmith" "John"   "Smith"  "$(get_secret_password jsmith-ad-credentials)" "10001" "10001" "mcloud-users"
-create_ad_user "edavis" "Emily"  "Davis"  "$(get_secret_password edavis-ad-credentials)" "10002" "10001" "mcloud-users"
-create_ad_user "rpatel" "Raj"    "Patel"  "$(get_secret_password rpatel-ad-credentials)" "10003" "10001" "mcloud-users"
-create_ad_user "akumar" "Amit"   "Kumar"  "$(get_secret_password akumar-ad-credentials)" "10004" "10001" "mcloud-users"
-
-# Assign users to groups
-
-samba-tool group addmembers "us"           "jsmith"  >> /root/ad_user_attributes.log 2>&1
-samba-tool group addmembers "linux-admins" "jsmith"  >> /root/ad_user_attributes.log 2>&1
-samba-tool group addmembers "us"           "edavis"  >> /root/ad_user_attributes.log 2>&1
-samba-tool group addmembers "india"        "rpatel"  >> /root/ad_user_attributes.log 2>&1
-samba-tool group addmembers "linux-admins" "rpatel"  >> /root/ad_user_attributes.log 2>&1
-samba-tool group addmembers "india"        "akumar"  >> /root/ad_user_attributes.log 2>&1
-
-#--------------------------------------------------------------------
-# Signal that mini-AD initialization iscomplete
-#--------------------------------------------------------------------
-
-az keyvault secret set --vault-name "$VAULT_NAME" --name "initialized-${NETBIOS}" --value "true"
+    # Add extra group memberships
+    for grp in $EXTRA_GROUPS; do
+        samba-tool group addmembers "$grp" "$USERNAME" >> /root/ad_user_attributes.log 2>&1
+    done
+done
 
 #--------------------------------------------------------------------
 # Reboot to ensure all changes are applied cleanly

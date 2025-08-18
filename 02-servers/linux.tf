@@ -4,20 +4,20 @@
 
 # --- Generate a strong random password for the 'ubuntu' account ---
 resource "random_password" "ubuntu_password" {
-  length           = 24                # Generate a 24-character password
-  special          = true              # Include special characters
-  override_special = "!@#$%"           # Restrict special characters to these
+  length           = 24      # Generate a 24-character password
+  special          = true    # Include special characters
+  override_special = "!@#$%" # Restrict special characters to these
 }
 
 # --- Store the ubuntu account credentials securely in Azure Key Vault ---
 resource "azurerm_key_vault_secret" "ubuntu_secret" {
-  name = "ubuntu-credentials"                               # Secret name
-  value = jsonencode({                                      # Store as JSON-encoded object with username/password
+  name = "ubuntu-credentials" # Secret name
+  value = jsonencode({        # Store as JSON-encoded object with username/password
     username = "ubuntu"
     password = random_password.ubuntu_password.result
   })
-  key_vault_id = data.azurerm_key_vault.ad_key_vault.id     # Target the existing Key Vault (data source)
-  content_type = "application/json"                         # Set content type to JSON for clarity
+  key_vault_id = data.azurerm_key_vault.ad_key_vault.id # Target the existing Key Vault (data source)
+  content_type = "application/json"                     # Set content type to JSON for clarity
 }
 
 # --- Create a network interface (NIC) for the Linux VM ---
@@ -35,13 +35,13 @@ resource "azurerm_network_interface" "linux_vm_nic" {
 }
 # --- Provision the actual Linux Virtual Machine ---
 resource "azurerm_linux_virtual_machine" "linux_ad_instance" {
-  name                            = "linux-ad-${random_string.vm_suffix.result}"  # Name the VM with a random suffix
-  location                        = data.azurerm_resource_group.ad.location       # Same location as resource group
-  resource_group_name             = data.azurerm_resource_group.ad.name           # Same resource group
-  size                            = "Standard_B1s"                                # Small VM size (for test/dev)
-  admin_username                  = "ubuntu"                                      # Admin username
-  admin_password                  = random_password.ubuntu_password.result        # Use generated password
-  disable_password_authentication = false                                         # Explicitly allow password auth
+  name                            = "linux-ad-${random_string.vm_suffix.result}" # Name the VM with a random suffix
+  location                        = data.azurerm_resource_group.ad.location      # Same location as resource group
+  resource_group_name             = data.azurerm_resource_group.ad.name          # Same resource group
+  size                            = "Standard_B1s"                               # Small VM size (for test/dev)
+  admin_username                  = "ubuntu"                                     # Admin username
+  admin_password                  = random_password.ubuntu_password.result       # Use generated password
+  disable_password_authentication = false                                        # Explicitly allow password auth
 
   # --- Attach the previously created network interface to the VM ---
   network_interface_ids = [
@@ -65,8 +65,8 @@ resource "azurerm_linux_virtual_machine" "linux_ad_instance" {
   # --- Pass custom data (cloud-init) to the VM at creation ---
   # This template can contain any necessary setup like installing packages or configuring domain joins
   custom_data = base64encode(templatefile("./scripts/custom_data.sh", {
-    vault_name  = data.azurerm_key_vault.ad_key_vault.name    # Inject Key Vault name into the script
-    domain_fqdn = var.dns_zone                                # Inject domain FQDN into the script
+    vault_name  = data.azurerm_key_vault.ad_key_vault.name # Inject Key Vault name into the script
+    domain_fqdn = var.dns_zone                             # Inject domain FQDN into the script
   }))
 
   # --- Assign a system-assigned managed identity to the VM ---
@@ -77,7 +77,7 @@ resource "azurerm_linux_virtual_machine" "linux_ad_instance" {
 
 # --- Grant the Linux VM's managed identity permission to read secrets from Key Vault ---
 resource "azurerm_role_assignment" "vm_lnx_key_vault_secrets_user" {
-  scope                = data.azurerm_key_vault.ad_key_vault.id                 # Target the Key Vault itself
-  role_definition_name = "Key Vault Secrets User"                               # Predefined Azure role that allows reading secrets
+  scope                = data.azurerm_key_vault.ad_key_vault.id                                   # Target the Key Vault itself
+  role_definition_name = "Key Vault Secrets User"                                                 # Predefined Azure role that allows reading secrets
   principal_id         = azurerm_linux_virtual_machine.linux_ad_instance.identity[0].principal_id # Managed identity of this VM
 }
