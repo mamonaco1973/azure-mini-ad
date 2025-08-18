@@ -15,16 +15,16 @@ apt-get update -y
 export DEBIAN_FRONTEND=noninteractive
 
 # Install necessary packages for AD integration, system management, and utilities.
-# - realmd, sssd-tools: Tools for AD integration and authentication.
+# - realmd, sssd-ad, sssd-tools: Tools for AD integration and authentication.
 # - libnss-sss, libpam-sss: Libraries for integrating SSSD with the system.
 # - adcli, samba-common-bin, samba-libs: Tools for AD and Samba integration.
 # - oddjob, oddjob-mkhomedir: Automatically create home directories for AD users.
 # - packagekit: Package management toolkit.
+# - krb5-user: Kerberos authentication tools.
 # - nano, vim: Text editors for configuration file editing.
-apt-get install less unzip realmd sssd-tools libnss-sss \
+apt-get install less unzip realmd sssd-ad sssd-tools libnss-sss \
     libpam-sss adcli samba-common-bin samba-libs oddjob \
-    oddjob-mkhomedir packagekit nano vim curl apt-transport-https \
-    lsb-release gnupg -y
+    oddjob-mkhomedir packagekit krb5-user nano vim -y
 
 # ---------------------------------------------------------------------------------
 # Section 2: Install AZ CLI
@@ -38,92 +38,50 @@ apt-get update -y
 apt-get install -y azure-cli
 
 # ---------------------------------------------------------------------------------
-# Section 2: Configure AD as the identity provider
+# Section 3: Configure AD as the identity provider
 # ---------------------------------------------------------------------------------
 
 az login --identity --allow-no-subscriptions
 secretsJson=$(az keyvault secret show --name admin-ad-credentials --vault-name ${vault_name} --query value -o tsv)
 admin_password=$(echo "$secretsJson" | jq -r '.password')
 
-systemctl stop sssd
+# Join the Active Directory domain using the `realm` command.
+# - ${domain_fqdn}: The fully qualified domain name (FQDN) of the AD domain.
+# - Log the output and errors to /tmp/join.log for debugging.
+echo -e "$admin_password" | sudo /usr/sbin/realm join -U "$admin_username" \
+    ${domain_fqdn} --verbose \
+    >> /tmp/join.log 2>> /tmp/join.log
 
-# Write the new sssd.conf
-cat <<EOF > "/etc/sssd/sssd.conf"
-[sssd]
-services = nss, pam
-config_file_version = 2
-domains = mcloud.mikecloud.com
-debug_level = 9
+# ---------------------------------------------------------------------------------
+# Section 4: Configure SSSD for AD Integration
+# ---------------------------------------------------------------------------------
 
-[domain/mcloud.mikecloud.com]
-debug_level = 9
+# Modify the SSSD configuration file to simplify user login and home directory creation.
+# - Disable fully qualified names (use only usernames instead of user@domain).
+sudo sed -i 's/use_fully_qualified_names = True/use_fully_qualified_names = False/g' \
+    /etc/sssd/sssd.conf
 
-id_provider = ldap
-auth_provider = ldap
-chpass_provider = ldap
+# Disable LDAP ID mapping to use UIDs and GIDs from AD.
+sudo sed -i 's/ldap_id_mapping = True/ldap_id_mapping = False/g' \
+    /etc/sssd/sssd.conf
 
-# LDAP Connection (Azure AD DS LDAP)
-ldap_uri = ldap://mcloud.mikecloud.com
-
-# Base DN for searches
-ldap_search_base = DC=mcloud,DC=mikecloud,DC=com
-
-# Bind DN (the admin account for LDAP queries)
-ldap_default_bind_dn = CN=mcloud-admin,OU=AADDC Users,DC=mcloud,DC=mikecloud,DC=com
-ldap_default_authtok = $admin_password
-
-# Search bases for users and groups (can be customized if needed)
-ldap_user_search_base = DC=mcloud,DC=mikecloud,DC=com
-ldap_group_search_base = DC=mcloud,DC=mikecloud,DC=com
-
-# Attribute mapping to Unix fields
-ldap_user_object_class = user
-ldap_user_name = sAMAccountName
-ldap_user_uid_number = uidNumber
-ldap_user_gid_number = gidNumber
-ldap_user_home_directory = unixHomeDirectory
-ldap_user_shell = loginShell
-
-# Explicit attribute mapping (groups)
-ldap_group_object_class = group
-ldap_group_name = sAMAccountName
-ldap_group_gid_number = gidNumber
-ldap_group_member = member
-
-ldap_schema = rfc2307bis
-
-# Use ID mapping (unless you store POSIX attributes in AD)
-ldap_id_mapping = False
-
-# Credential caching (helps with offline logins)
-cache_credentials = True
-
-# Performance tuning
-enumerate = False
-
-# Additional options to handle UID/GID if needed (especially if Azure AD DS doesn't have POSIX attributes)
-fallback_homedir = /home/%u
-default_shell = /bin/bash
-
-ldap_id_use_start_tls = False
-ldap_tls_reqcert = never
-use_fully_qualified_names = False
-ldap_auth_disable_tls_never_use_in_production = true
-
-EOF
-
-chmod 600 /etc/sssd/sssd.conf
-sudo pam-auth-update --enable mkhomedir
-systemctl enable sssd
-systemctl start sssd
+# Change the fallback home directory path to a simpler format (/home/%u).
+sudo sed -i 's|fallback_homedir = /home/%u@%d|fallback_homedir = /home/%u|' \
+    /etc/sssd/sssd.conf
 
 # Stop XAuthority warning 
 
 touch /etc/skel/.Xauthority
 chmod 600 /etc/skel/.Xauthority
 
+# Restart the SSSD and SSH services to apply the changes.
+
+sudo pam-auth-update --enable mkhomedir
+sudo systemctl restart sssd
+sudo systemctl restart ssh
+
 # ---------------------------------------------------------------------------------
-# Section 3: Grant Sudo Privileges to AD Linux Admins
+# Section 5: Grant Sudo Privileges to AD Linux Admins
 # ---------------------------------------------------------------------------------
 
 # Add a sudoers rule to grant passwordless sudo access to members of the

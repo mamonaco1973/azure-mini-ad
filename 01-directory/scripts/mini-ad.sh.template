@@ -232,7 +232,7 @@ get_secret_password() {
         --vault-name "${VAULT_NAME}" \
         --name "$secret_name" \
         --query value \
-        -o tsv
+        -o tsv | jq -r '.password'
 }
 
 #---------------------------------------------------------------------------------
@@ -310,10 +310,10 @@ EOF
 
 # Create sample domain users
 
-create_ad_user "jsmith" "John"   "Smith"  "$(get_secret_password jsmith_ad_credentials)" "10001" "10001" "mcloud-users"
-create_ad_user "edavis" "Emily"  "Davis"  "$(get_secret_password edavis_ad_credentials)" "10002" "10001" "mcloud-users"
-create_ad_user "rpatel" "Raj"    "Patel"  "$(get_secret_password rpatel_ad_credentials)" "10003" "10001" "mcloud-users"
-create_ad_user "akumar" "Amit"   "Kumar"  "$(get_secret_password akumar_ad_credentials)" "10004" "10001" "mcloud-users"
+create_ad_user "jsmith" "John"   "Smith"  "$(get_secret_password jsmith-ad-credentials)" "10001" "10001" "mcloud-users"
+create_ad_user "edavis" "Emily"  "Davis"  "$(get_secret_password edavis-ad-credentials)" "10002" "10001" "mcloud-users"
+create_ad_user "rpatel" "Raj"    "Patel"  "$(get_secret_password rpatel-ad-credentials)" "10003" "10001" "mcloud-users"
+create_ad_user "akumar" "Amit"   "Kumar"  "$(get_secret_password akumar-ad-credentials)" "10004" "10001" "mcloud-users"
 
 # Assign users to groups
 

@@ -4,7 +4,7 @@
 resource "random_password" "jsmith_password" {
   length           = 24
   special          = true
-  override_special = "!@#$%"
+  override_special = "!@#%"
 }
 
 # Create secret for John Smith's credentials
@@ -26,7 +26,7 @@ resource "azurerm_key_vault_secret" "jsmith_secret" {
 resource "random_password" "edavis_password" {
   length           = 24
   special          = true
-  override_special = "!@#$%"
+  override_special = "!@#%"
 }
 
 # Create secret for Emily Davis' credentials
@@ -48,7 +48,7 @@ resource "azurerm_key_vault_secret" "edavis_secret" {
 resource "random_password" "rpatel_password" {
   length           = 24
   special          = true
-  override_special = "!@#$%"
+  override_special = "!@#%"
 }
 
 # Create secret for Raj Patel's credentials
@@ -70,7 +70,7 @@ resource "azurerm_key_vault_secret" "rpatel_secret" {
 resource "random_password" "akumar_password" {
   length           = 24
   special          = true
-  override_special = "!@#$%"
+  override_special = "!@#%"
 }
 
 # Create secret for Amit Kumar's credentials
@@ -92,7 +92,7 @@ resource "azurerm_key_vault_secret" "akumar_secret" {
 resource "random_password" "sysadmin_password" {
   length           = 24
   special          = true
-  override_special = "!@#$%"
+  override_special = "!@#%"
 }
 
 # Create secret for sysadmin's credentials
@@ -122,7 +122,7 @@ resource "random_password" "admin_password" {
 # Create secret for AD Admin credentials
 
 resource "azurerm_key_vault_secret" "admin_secret" {
-  name = "admin-credentials"
+  name = "admin-ad-credentials"
   value = jsonencode({
     username = "MCLOUD\\Admin"
     password = random_password.admin_password.result
