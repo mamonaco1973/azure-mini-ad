@@ -41,12 +41,15 @@ resource "azurerm_linux_virtual_machine" "mini_ad_instance" {
     version   = "latest"           # Use the latest version available
   }
 
-  #   # --- Pass custom data (cloud-init) to the VM at creation ---
-  #   # This template can contain any necessary setup like installing packages or configuring domain joins
-  #   custom_data = base64encode(templatefile("./scripts/custom_data.sh", {
-  #     vault_name  = data.azurerm_key_vault.ad_key_vault.name    # Inject Key Vault name into the script
-  #     domain_fqdn = "mcloud.mikecloud.com"                      # Inject domain FQDN into the script
-  #   }))
+  custom_data = templatefile("./scripts/mini-ad.sh.template", {
+    HOSTNAME_DC        = "ad1"
+    DNS_ZONE           = var.dns_zone
+    REALM              = var.realm
+    NETBIOS            = var.netbios
+    ADMINISTRATOR_PASS = random_password.admin_password.result
+    ADMIN_USER_PASS    = random_password.admin_password.result
+    VAULT_NAME         = azurerm_key_vault.ad_key_vault.name
+  })
 
   # --- Assign a system-assigned managed identity to the VM ---
   identity {
@@ -64,3 +67,23 @@ resource "azurerm_role_assignment" "vm_mini_ad_key_vault_secrets_user" {
   role_definition_name = "Key Vault Secrets Officer"                                             # Predefined Azure role that allows reading secrets
   principal_id         = azurerm_linux_virtual_machine.mini_ad_instance.identity[0].principal_id # Managed identity of this VM
 }
+
+
+# ==================================================================================================
+# Delay to allow the DC to finish provisioning (Samba/DNS up) before associating DHCP options
+# Adjust duration to your bootstrap time; 180s is a conservative lab default
+# ==================================================================================================
+resource "time_sleep" "wait_for_mini_ad" {
+  depends_on      = [azurerm_linux_virtual_machine.mini_ad_instance]
+  create_duration = "180s"
+}
+
+# Update the DNS servers for the existing VNet
+resource "azurerm_virtual_network_dns_servers" "aadds_dns_servers" {
+  virtual_network_id = azurerm_virtual_network.ad_vnet.id
+  dns_servers        = [azurerm_network_interface.mini_ad_vm_nic.ip_configuration[0].private_ip_address]
+  depends_on         = [time_sleep.wait_for_mini_ad]
+}
+
+
+
