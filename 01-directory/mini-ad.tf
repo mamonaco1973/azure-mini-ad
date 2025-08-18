@@ -79,7 +79,7 @@ resource "time_sleep" "wait_for_mini_ad" {
 }
 
 # Update the DNS servers for the existing VNet
-resource "azurerm_virtual_network_dns_servers" "aadds_dns_servers" {
+resource "azurerm_virtual_network_dns_servers" "mini_ad_dns_server" {
   virtual_network_id = azurerm_virtual_network.ad_vnet.id
   dns_servers        = [azurerm_network_interface.mini_ad_vm_nic.ip_configuration[0].private_ip_address]
   depends_on         = [time_sleep.wait_for_mini_ad]

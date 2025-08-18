@@ -21,7 +21,7 @@ data "azurerm_client_config" "current" {}
 variable "resource_group_name" {
   description = "The name of the Azure resource group"
   type        = string
-  default     = "ad-resource-group"  # Default name if none is provided
+  default     = "mini-ad-rg"  # Default name if none is provided
 }
 
 # --- Variable for Key Vault name (can be overridden at apply time) ---
@@ -52,8 +52,4 @@ data "azurerm_key_vault" "ad_key_vault" {
 }
 # This allows other resources (like secrets) to link to this Key Vault.
 
-variable "azure_domain" {
-  description = "The default Azure AD domain"
-#  default     = "mamonaco1973gmail.onmicrosoft.com"
-}
 

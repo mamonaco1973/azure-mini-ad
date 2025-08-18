@@ -19,12 +19,12 @@ if [ $? -ne 0 ]; then
 fi
 cd ..
 
-#cd 02-servers
+cd 02-servers
 
-#vault=$(az keyvault list --resource-group ad-resource-group --query "[?starts_with(name, 'ad-key-vault')].name | [0]" --output tsv)
-#echo "NOTE: Key vault for secrets is $vault"
-#terraform init
-#terraform apply -var="vault_name=$vault" -auto-approve
+vault=$(az keyvault list --resource-group ad-resource-group --query "[?starts_with(name, 'ad-key-vault')].name | [0]" --output tsv)
+echo "NOTE: Key vault for secrets is $vault"
+terraform init
+terraform apply -var="vault_name=$vault" -auto-approve
 
-#cd ..
+cd ..
 
