@@ -36,19 +36,19 @@ resource "azurerm_network_interface" "windows_vm_nic" {
     name                          = "internal"                          # Name the IP config block
     subnet_id                     = data.azurerm_subnet.vm_subnet.id    # Reference the existing subnet (data source)
     private_ip_address_allocation = "Dynamic"                           # Dynamically allocate private IP
-    public_ip_address_id          = azurerm_public_ip.windows_vm_ip.id  # Link to the public IP resource
+#    public_ip_address_id          = azurerm_public_ip.windows_vm_ip.id  # Link to the public IP resource
   }
 }
 
-# --- Define a public IP to access the Windows VM ---
-resource "azurerm_public_ip" "windows_vm_ip" {
-  name                = "windows-vm-ip"                          # Public IP name
-  location            = data.azurerm_resource_group.ad.location  # Use same location as resource group
-  resource_group_name = data.azurerm_resource_group.ad.name      # Place public IP in same resource group
-  allocation_method   = "Static"                                 # Public IP assigned dynamically
-  sku                 = "Standard"                               # Use Basic Standard
-  domain_name_label   = "window-vm-${random_string.vm_suffix.result}" # Unique DNS label based on random suffix
-}
+# # --- Define a public IP to access the Windows VM ---
+# resource "azurerm_public_ip" "windows_vm_ip" {
+#   name                = "windows-vm-ip"                          # Public IP name
+#   location            = data.azurerm_resource_group.ad.location  # Use same location as resource group
+#   resource_group_name = data.azurerm_resource_group.ad.name      # Place public IP in same resource group
+#   allocation_method   = "Static"                                 # Public IP assigned dynamically
+#   sku                 = "Standard"                               # Use Basic Standard
+#   domain_name_label   = "window-vm-${random_string.vm_suffix.result}" # Unique DNS label based on random suffix
+# }
 
 # --- Deploy the actual Windows Virtual Machine ---
 resource "azurerm_windows_virtual_machine" "windows_ad_instance" {
