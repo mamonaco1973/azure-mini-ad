@@ -6,13 +6,13 @@ resource "random_string" "key_vault_suffix" {
 
 # Create an Azure Key Vault
 resource "azurerm_key_vault" "ad_key_vault" {
-  name                        = "ad-key-vault-${random_string.key_vault_suffix.result}"  
-  resource_group_name         = azurerm_resource_group.ad.name
-  location                    = azurerm_resource_group.ad.location
-  sku_name                    = "standard"
-  tenant_id                   = data.azurerm_client_config.current.tenant_id
-  purge_protection_enabled    = false
-  enable_rbac_authorization   = true
+  name                      = "ad-key-vault-${random_string.key_vault_suffix.result}"
+  resource_group_name       = azurerm_resource_group.ad.name
+  location                  = azurerm_resource_group.ad.location
+  sku_name                  = "standard"
+  tenant_id                 = data.azurerm_client_config.current.tenant_id
+  purge_protection_enabled  = false
+  enable_rbac_authorization = true
 }
 
 # Assign RBAC role to the current client for managing secrets

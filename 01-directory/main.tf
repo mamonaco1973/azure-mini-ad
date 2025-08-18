@@ -3,14 +3,14 @@ provider "azurerm" {
   # Enables the default features of the provider
   features {
     key_vault {
-        purge_soft_delete_on_destroy    = true
-        recover_soft_deleted_key_vaults = false
-      }
-      
-    resource_group {
-       prevent_deletion_if_contains_resources = false
-       }
+      purge_soft_delete_on_destroy    = true
+      recover_soft_deleted_key_vaults = false
     }
+
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 # Data source to fetch details of the primary subscription
@@ -35,8 +35,8 @@ variable "resource_group_location" {
 
 # Define a resource group for all resources
 resource "azurerm_resource_group" "ad" {
-  name     = var.resource_group_name  # Name of the resource group from variable
-  location = var.resource_group_location  # Location from variable
+  name     = var.resource_group_name     # Name of the resource group from variable
+  location = var.resource_group_location # Location from variable
 }
 
 
