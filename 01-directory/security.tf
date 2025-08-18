@@ -1,7 +1,14 @@
 # ==================================================================================================
-# Network Security Group: mini-ad-nsg
-# Purpose: Allow all required ports for a Samba-based Active Directory Domain Controller.
-# NOTE: Currently open to all IPv4 (0.0.0.0/0) for simplicity — secure this in production.
+# Resource: Network Security Group (mini-ad-nsg)
+# Purpose:
+#   Defines inbound and outbound firewall rules required for a Samba-based
+#   Active Directory Domain Controller (AD DC) hosted on Azure.
+#
+# Notes:
+#   - Current rules allow traffic from any IPv4 source (0.0.0.0/0).
+#     This is acceptable for prototyping and labs but **not secure for production**.
+#   - In production, restrict source_address_prefix to known IP ranges,
+#     corporate VPNs, or peered VNets.
 # ==================================================================================================
 
 resource "azurerm_network_security_group" "mini_ad_nsg" {
@@ -9,7 +16,10 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
   location            = azurerm_resource_group.ad.location
   resource_group_name = azurerm_resource_group.ad.name
 
+  # ------------------------------------------------------------------------------------------------
   # DNS (TCP/UDP 53)
+  # Required for name resolution within the Active Directory domain.
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "DNS-TCP"
     priority                   = 100
@@ -33,7 +43,10 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
-  # Kerberos (TCP/UDP 88)
+  # ------------------------------------------------------------------------------------------------
+  # Kerberos Authentication (TCP/UDP 88)
+  # Core authentication protocol for Active Directory (used by domain logins).
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "Kerberos-TCP"
     priority                   = 110
@@ -57,7 +70,10 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
+  # ------------------------------------------------------------------------------------------------
   # LDAP (TCP/UDP 389)
+  # Used for directory queries (binds, searches, authentication lookups).
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "LDAP-TCP"
     priority                   = 120
@@ -81,7 +97,10 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
-  # SMB/CIFS (TCP 445)
+  # ------------------------------------------------------------------------------------------------
+  # SMB / CIFS (TCP 445)
+  # Required for file shares, SYSVOL/NETLOGON replication, and domain logon scripts.
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "SMB"
     priority                   = 130
@@ -94,7 +113,10 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
+  # ------------------------------------------------------------------------------------------------
   # Kerberos Password Change (TCP/UDP 464)
+  # Required for domain users to change or reset their passwords.
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "KerberosPwd-TCP"
     priority                   = 140
@@ -118,7 +140,10 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
+  # ------------------------------------------------------------------------------------------------
   # RPC Endpoint Mapper (TCP 135)
+  # Enables RPC-based services such as AD replication, Group Policy, and management tools.
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "RPC-135"
     priority                   = 150
@@ -131,7 +156,10 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
+  # ------------------------------------------------------------------------------------------------
   # HTTPS (TCP 443)
+  # Provides secure communication for web-based management and LDAPS fallback.
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "HTTPS"
     priority                   = 160
@@ -144,7 +172,10 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
+  # ------------------------------------------------------------------------------------------------
   # LDAPS (TCP 636)
+  # Encrypted LDAP (TLS/SSL) – required for secure directory queries.
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "LDAPS"
     priority                   = 170
@@ -157,7 +188,12 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
+  # ------------------------------------------------------------------------------------------------
   # Global Catalog (TCP 3268, 3269)
+  # Facilitates forest-wide searches across multiple domains.
+  #  - 3268: Unencrypted Global Catalog
+  #  - 3269: Encrypted Global Catalog (TLS/SSL)
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "GC-3268"
     priority                   = 180
@@ -181,7 +217,11 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
+  # ------------------------------------------------------------------------------------------------
   # Ephemeral RPC Ports (TCP 49152–65535)
+  # Dynamic high ports required by Active Directory for RPC communication.
+  # Without this range, AD replication and GPO processing may fail.
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "Ephemeral-RPC"
     priority                   = 190
@@ -194,7 +234,10 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
+  # ------------------------------------------------------------------------------------------------
   # NTP (UDP 123)
+  # Time synchronization required for Kerberos authentication to function properly.
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "NTP"
     priority                   = 200
@@ -207,7 +250,11 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
     destination_address_prefix = "*"
   }
 
-  # Allow all outbound
+  # ------------------------------------------------------------------------------------------------
+  # Outbound Rules
+  # Allow all outbound traffic (simplifies AD services which often initiate connections).
+  # In production, refine to required destinations only.
+  # ------------------------------------------------------------------------------------------------
   security_rule {
     name                       = "AllowAllOutbound"
     priority                   = 1000
@@ -225,7 +272,11 @@ resource "azurerm_network_security_group" "mini_ad_nsg" {
   }
 }
 
-# Associate NSG with the mini-AD subnet
+# ==================================================================================================
+# Resource: Subnet → NSG Association
+# Purpose:
+#   Binds the defined NSG to the subnet hosting the mini Active Directory controller.
+# ==================================================================================================
 resource "azurerm_subnet_network_security_group_association" "mini_ad_subnet_assoc" {
   subnet_id                 = azurerm_subnet.mini_ad_subnet.id
   network_security_group_id = azurerm_network_security_group.mini_ad_nsg.id

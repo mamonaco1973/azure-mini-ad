@@ -334,3 +334,4 @@ az keyvault secret set --vault-name "$VAULT_NAME" --name "initialized-${NETBIOS}
 # Reboot to ensure all changes are applied cleanly
 #--------------------------------------------------------------------
 reboot
+

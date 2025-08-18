@@ -1,0 +1,55 @@
+{
+  "domain": {
+    "dnsZone": "mcloud.mikecloud.com",
+    "netbios": "MCLOUD",
+    "userBaseDn": "CN=Users,DC=mcloud,DC=mikecloud,DC=com"
+  },
+  "groups": [
+    { "name": "mcloud-users", "gidNumber": 10001 },
+    { "name": "us",           "gidNumber": 10002 },
+    { "name": "india",        "gidNumber": 10003 },
+    { "name": "linux-admins", "gidNumber": 10004 }
+  ],
+  "users": [
+    {
+      "username": "jsmith",
+      "givenName": "John",
+      "surname": "Smith",
+      "password": "${jsmith_password}",
+      "uidNumber": 10001,
+      "gidNumber": 10001,
+      "primaryGroup": "mcloud-users",
+      "extraGroups": ["us", "linux-admins"]
+    },
+    {
+      "username": "edavis",
+      "givenName": "Emily",
+      "surname": "Davis",
+      "password": "${edavis_password}",
+      "uidNumber": 10002,
+      "gidNumber": 10001,
+      "primaryGroup": "mcloud-users",
+      "extraGroups": ["us"]
+    },
+    {
+      "username": "rpatel",
+      "givenName": "Raj",
+      "surname": "Patel",
+      "password": "SecretPass123!",
+      "uidNumber": 10003,
+      "gidNumber": 10001,
+      "primaryGroup": "mcloud-users",
+      "extraGroups": ["india", "linux-admins"]
+    },
+    {
+      "username": "akumar",
+      "givenName": "Amit",
+      "surname": "Kumar",
+      "password": "SecretPass123!",
+      "uidNumber": 10004,
+      "gidNumber": 10001,
+      "primaryGroup": "mcloud-users",
+      "extraGroups": ["india"]
+    }
+  ]
+}
