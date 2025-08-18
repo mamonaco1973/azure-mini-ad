@@ -3,8 +3,8 @@ provider "azurerm" {
   # Enables provider-specific features (can be empty if defaults are fine)
   features {
     key_vault {
-        purge_soft_delete_on_destroy    = true  # When a Key Vault is destroyed, purge it immediately (bypass soft-delete retention)
-        recover_soft_deleted_key_vaults = false # Do NOT auto-recover soft-deleted Key Vaults
+      purge_soft_delete_on_destroy    = true  # When a Key Vault is destroyed, purge it immediately (bypass soft-delete retention)
+      recover_soft_deleted_key_vaults = false # Do NOT auto-recover soft-deleted Key Vaults
     }
   }
 }
@@ -21,19 +21,19 @@ data "azurerm_client_config" "current" {}
 variable "resource_group_name" {
   description = "The name of the Azure resource group"
   type        = string
-  default     = "mini-ad-rg"  # Default name if none is provided
+  default     = "mini-ad-rg" # Default name if none is provided
 }
 
 # --- Variable for Key Vault name (can be overridden at apply time) ---
 variable "vault_name" {
   description = "The name of the secrets vault"
   type        = string
-#  default     = "ad-key-vault-qcxu2ksw"  # Example default (commented out, so it's explicitly required unless set via CLI or TFVARS)
+  #  default     = "ad-key-vault-qcxu2ksw"  # Example default (commented out, so it's explicitly required unless set via CLI or TFVARS)
 }
 
 # --- Data source to fetch details about the resource group ---
 data "azurerm_resource_group" "ad" {
-  name = var.resource_group_name  # Use the resource group name from the variable
+  name = var.resource_group_name # Use the resource group name from the variable
 }
 # This allows other resources to refer to the location, ID, etc., of this resource group.
 
@@ -47,8 +47,8 @@ data "azurerm_subnet" "vm_subnet" {
 
 # --- Data source to fetch details about the existing Key Vault ---
 data "azurerm_key_vault" "ad_key_vault" {
-  name                = var.vault_name                      # Key Vault name provided via variable
-  resource_group_name = var.resource_group_name             # Key Vault must be in the same resource group
+  name                = var.vault_name          # Key Vault name provided via variable
+  resource_group_name = var.resource_group_name # Key Vault must be in the same resource group
 }
 # This allows other resources (like secrets) to link to this Key Vault.
 

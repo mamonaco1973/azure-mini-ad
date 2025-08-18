@@ -12,7 +12,7 @@ resource "random_password" "jsmith_password" {
 resource "azurerm_key_vault_secret" "jsmith_secret" {
   name = "jsmith-ad-credentials"
   value = jsonencode({
-    username = "MCLOUD\\jsmith"
+    username = "jsmith@${var.dns_zone}"
     password = random_password.jsmith_password.result
   })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
@@ -34,7 +34,7 @@ resource "random_password" "edavis_password" {
 resource "azurerm_key_vault_secret" "edavis_secret" {
   name = "edavis-ad-credentials"
   value = jsonencode({
-    username = "MCLOUD\\edavis"
+    username = "edavis@${var.dns_zone}"
     password = random_password.edavis_password.result
   })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
@@ -56,7 +56,7 @@ resource "random_password" "rpatel_password" {
 resource "azurerm_key_vault_secret" "rpatel_secret" {
   name = "rpatel-ad-credentials"
   value = jsonencode({
-    username = "MCLOUD\\rpatel"
+    username = "rpatel@${var.dns_zone}"
     password = random_password.rpatel_password.result
   })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
@@ -78,7 +78,7 @@ resource "random_password" "akumar_password" {
 resource "azurerm_key_vault_secret" "akumar_secret" {
   name = "akumar-ad-credentials"
   value = jsonencode({
-    username = "MCLOUD\\akumar"
+    username = "akumar@${var.dns_zone}"
     password = random_password.akumar_password.result
   })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
@@ -124,7 +124,7 @@ resource "random_password" "admin_password" {
 resource "azurerm_key_vault_secret" "admin_secret" {
   name = "admin-ad-credentials"
   value = jsonencode({
-    username = "MCLOUD\\Admin"
+    username = "Admin@${var.dns_zone}"
     password = random_password.admin_password.result
   })
   key_vault_id = azurerm_key_vault.ad_key_vault.id
