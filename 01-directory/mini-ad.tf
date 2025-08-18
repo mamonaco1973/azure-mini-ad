@@ -61,6 +61,6 @@ resource "azurerm_linux_virtual_machine" "mini_ad_instance" {
 # --- Grant the Linux VM's managed identity permission to read secrets from Key Vault ---
 resource "azurerm_role_assignment" "vm_mini_ad_key_vault_secrets_user" {
   scope                = azurerm_key_vault.ad_key_vault.id                                       # Target the Key Vault itself
-  role_definition_name = "Key Vault Secrets User"                                                # Predefined Azure role that allows reading secrets
+  role_definition_name = "Key Vault Secrets Officer"                                             # Predefined Azure role that allows reading secrets
   principal_id         = azurerm_linux_virtual_machine.mini_ad_instance.identity[0].principal_id # Managed identity of this VM
 }
