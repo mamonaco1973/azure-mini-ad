@@ -26,7 +26,7 @@ variable "netbios" {
 }
 
 variable "user_base_dn" {
-  description = "Base DN for user objects in LDAP (e.g., OU=Users,DC=mcloud,DC=mikecloud,DC=com)."
+  description = "Base DN for user objects in LDAP (e.g., CN=Users,DC=mcloud,DC=mikecloud,DC=com)."
   type        = string
 }
 
@@ -67,4 +67,5 @@ variable "vnet_id" {
 variable "users_json" {
   description = "Pre-rendered JSON string containing user account definitions (from users.json.template)."
   type        = string
+  default     = ""
 }
