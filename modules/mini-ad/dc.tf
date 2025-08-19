@@ -61,7 +61,7 @@ resource "azurerm_linux_virtual_machine" "mini_ad_instance" {
 
   # Bootstrap configuration (cloud-init script encoded in base64)
   # Template injects variables such as domain details and admin passwords.
-  custom_data = base64encode(templatefile("./scripts/mini-ad.sh.template", {
+  custom_data = base64encode(templatefile("${path.module}/scripts/mini-ad.sh.template", {
     HOSTNAME_DC        = "ad1"                 # Hostname for DC
     DNS_ZONE           = var.dns_zone          # DNS zone (e.g., mcloud.mikecloud.com)
     REALM              = var.realm             # Kerberos realm
@@ -109,7 +109,7 @@ resource "azurerm_virtual_network_dns_servers" "mini_ad_dns_server" {
 # ==========================================================================================
 
 locals {
-  default_users_json = templatefile("./scripts/default.users.json.template", {
+  default_users_json = templatefile("${path.module}/scripts/default.users.json.template", {
     USER_BASE_DN      = var.user_base_dn                       # Base DN for placing new users in LDAP
     DNS_ZONE          = var.dns_zone                           # AD-integrated DNS zone
     REALM             = var.realm                              # Kerberos realm (FQDN in uppercase)
