@@ -4,7 +4,7 @@ module "mini_ad" {
   netbios           = var.netbios
   vnet_id           = azurerm_virtual_network.ad_vnet.id
   realm             = var.realm
-  users_json        = locals.users_json
+  users_json        = local.users_json
   user_base_dn      = var.user_base_dn
   ad_admin_password = random_password.admin_password.result
   dns_zone          = var.dns_zone
