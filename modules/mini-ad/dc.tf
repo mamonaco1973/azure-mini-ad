@@ -99,3 +99,28 @@ resource "azurerm_virtual_network_dns_servers" "mini_ad_dns_server" {
 }
 
 
+# ==========================================================================================
+# Local Variable: default_users_json
+# ------------------------------------------------------------------------------------------
+# - Renders a JSON file (`users.json.template`) into a single JSON blob
+# - Injects unique random passwords for test/demo users
+# - Template variables are replaced with real values at runtime
+# - Passed into the VM bootstrap so users are created automatically
+# ==========================================================================================
+
+locals {
+  default_users_json = templatefile("./scripts/users.json.template", {
+    USER_BASE_DN      = var.user_base_dn                       # Base DN for placing new users in LDAP
+    DNS_ZONE          = var.dns_zone                           # AD-integrated DNS zone
+    REALM             = var.realm                              # Kerberos realm (FQDN in uppercase)
+    NETBIOS           = var.netbios                            # NetBIOS domain name
+    sysadmin_password = var.admin_password                     # Sysadmin password
+  })
+}
+
+# --- Save the rendered PowerShell script to a local file ---
+resource "local_file" "ad_join_rendered" {
+  filename = "/tmp/users.json"          # Save rendered script as 'users.json'
+  content  = local.default_users_json   # Use content from the templatefile rendered in locals
+}
+
