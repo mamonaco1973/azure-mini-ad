@@ -21,7 +21,7 @@ data "azurerm_client_config" "current" {}
 variable "resource_group_name" {
   description = "The name of the Azure resource group"
   type        = string
-  default     = "mini-ad-rg" # Default name if none is provided
+  default     = "mcloud-project-rg"
 }
 
 # --- Variable for Key Vault name (can be overridden at apply time) ---

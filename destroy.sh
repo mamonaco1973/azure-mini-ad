@@ -16,25 +16,25 @@
 
 set -e  # Exit immediately if any command fails
 
-# # --------------------------------------------------------------------------------------------------
-# # Phase 1: Destroy Server Layer
-# # - Destroys the Samba-based AD Domain Controller VM and dependent resources.
-# # - Retrieves the Key Vault name created in Phase 1 of deployment to ensure Terraform
-# #   can clean up associated secrets and references.
-# # --------------------------------------------------------------------------------------------------
-# cd 02-servers
+# --------------------------------------------------------------------------------------------------
+# Phase 1: Destroy Server Layer
+# - Destroys the Samba-based AD Domain Controller VM and dependent resources.
+# - Retrieves the Key Vault name created in Phase 1 of deployment to ensure Terraform
+#   can clean up associated secrets and references.
+# --------------------------------------------------------------------------------------------------
+cd 02-servers
 
-# vault=$(az keyvault list \
-#   --resource-group mcloud-project-rg \
-#   --query "[?starts_with(name, 'ad-key-vault')].name | [0]" \
-#   --output tsv)
+vault=$(az keyvault list \
+  --resource-group mcloud-project-rg \
+  --query "[?starts_with(name, 'ad-key-vault')].name | [0]" \
+  --output tsv)
 
-# echo "NOTE: Key vault for secrets is $vault"
+echo "NOTE: Key vault for secrets is $vault"
 
-# terraform init   # Initialize Terraform working directory (re-download providers/modules if needed)
-# terraform destroy -var="vault_name=$vault" -auto-approve   # Destroy VM and dependent resources
+terraform init   # Initialize Terraform working directory (re-download providers/modules if needed)
+terraform destroy -var="vault_name=$vault" -auto-approve   # Destroy VM and dependent resources
 
-# cd ..
+cd ..
 
 # --------------------------------------------------------------------------------------------------
 # Phase 2: Destroy Directory Layer
