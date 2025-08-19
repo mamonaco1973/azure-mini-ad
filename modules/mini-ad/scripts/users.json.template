@@ -24,7 +24,7 @@
       "username": "sysadmin-india",
       "givenName": "System",
       "surname": "Admin-India",
-      "password": ${sysadmin_password}",
+      "password": "${sysadmin_password}",
       "uidNumber": 10002,
       "gidNumber": 10001,
       "primaryGroup": "${lower(NETBIOS)}-users", 
