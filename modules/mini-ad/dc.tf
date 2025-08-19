@@ -109,7 +109,7 @@ resource "azurerm_virtual_network_dns_servers" "mini_ad_dns_server" {
 # ==========================================================================================
 
 locals {
-  default_users_json = templatefile("${path.module}/scripts/default.users.json.template", {
+  default_users_json = templatefile("${path.module}/scripts/users.json.template", {
     USER_BASE_DN      = var.user_base_dn                       # Base DN for placing new users in LDAP
     DNS_ZONE          = var.dns_zone                           # AD-integrated DNS zone
     REALM             = var.realm                              # Kerberos realm (FQDN in uppercase)
