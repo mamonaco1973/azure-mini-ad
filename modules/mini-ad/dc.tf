@@ -32,13 +32,13 @@ resource "azurerm_network_interface" "mini_ad_vm_nic" {
 # Acts as the Samba-based AD Domain Controller
 # --------------------------------------------------------------------------------------------------
 resource "azurerm_linux_virtual_machine" "mini_ad_instance" {
-  name                            = "mini-ad-dc-${lower(var.netbios)}"       # VM name includes NetBIOS
-  location                        = var.location                             # Same region
-  resource_group_name             = azurerm_resource_group.mini_ad_rg.name   # Same resource group
-  size                            = var.vm_size                              # Small/cheap VM size (lab use)
-  admin_username                  = var.admin_username                       # Local admin account
-  admin_password                  = var.admin_password                       # Local admin password
-  disable_password_authentication = false                                    # Allow password login (lab convenience)
+  name                            = "mini-ad-dc-${lower(var.netbios)}"     # VM name includes NetBIOS
+  location                        = var.location                           # Same region
+  resource_group_name             = azurerm_resource_group.mini_ad_rg.name # Same resource group
+  size                            = var.vm_size                            # Small/cheap VM size (lab use)
+  admin_username                  = var.admin_username                     # Local admin account
+  admin_password                  = var.admin_password                     # Local admin password
+  disable_password_authentication = false                                  # Allow password login (lab convenience)
 
   # Attach NIC to VM
   network_interface_ids = [
@@ -62,14 +62,14 @@ resource "azurerm_linux_virtual_machine" "mini_ad_instance" {
   # Bootstrap configuration (cloud-init script encoded in base64)
   # Template injects variables such as domain details and admin passwords.
   custom_data = base64encode(templatefile("./scripts/mini-ad.sh.template", {
-    HOSTNAME_DC        = "ad1"                                 # Hostname for DC
-    DNS_ZONE           = var.dns_zone                          # DNS zone (e.g., mcloud.mikecloud.com)
-    REALM              = var.realm                             # Kerberos realm
-    NETBIOS            = var.netbios                           # NetBIOS name
-    ADMINISTRATOR_PASS = var.ad_admin_password                 # AD Admin password
-    ADMIN_USER_PASS    = var.ad_admin_password                # Domain user password
-    USER_BASE_DN       = var.user_base_dn                      # User base DN for LDAP
-    USERS_JSON         = var.users_json                        # User accounts JSON
+    HOSTNAME_DC        = "ad1"                 # Hostname for DC
+    DNS_ZONE           = var.dns_zone          # DNS zone (e.g., mcloud.mikecloud.com)
+    REALM              = var.realm             # Kerberos realm
+    NETBIOS            = var.netbios           # NetBIOS name
+    ADMINISTRATOR_PASS = var.ad_admin_password # AD Admin password
+    ADMIN_USER_PASS    = var.ad_admin_password # Domain user password
+    USER_BASE_DN       = var.user_base_dn      # User base DN for LDAP
+    USERS_JSON         = var.users_json        # User accounts JSON
   }))
 
   # Assign a managed identity 
