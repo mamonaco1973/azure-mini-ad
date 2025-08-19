@@ -9,6 +9,6 @@ resource "random_string" "mini_ad_rg_suffix" {
 }
 
 resource "azurerm_resource_group" "mini_ad_rg" {
-  name     = "mini-ad-rg-${var.netbios}-${random_string.mini_ad_rg_suffix.result}"
+  name     = "mini-ad-${lower(var.netbios)}-${random_string.mini_ad_rg_suffix.result}-rg"
   location = var.location
 }
