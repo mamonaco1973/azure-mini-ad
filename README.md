@@ -8,9 +8,10 @@ This solution is ideal for **labs, demos, and development environments** where A
 
 See the `Limitations` sections for a list of caveats.
 
+---
+
 ![Azure diagram](azure-mini-directory.png)
 
----
 
 ## Limitations  
 
