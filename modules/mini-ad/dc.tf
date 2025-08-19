@@ -93,7 +93,7 @@ resource "time_sleep" "wait_for_mini_ad" {
 # Update Virtual Network DNS to point to the AD DC
 # Required for domain joins and internal name resolution.
 resource "azurerm_virtual_network_dns_servers" "mini_ad_dns_server" {
-  virtual_network_id = azurerm_virtual_network.ad_vnet.id
+  virtual_network_id = var.vnet_id
   dns_servers        = [azurerm_network_interface.mini_ad_vm_nic.ip_configuration[0].private_ip_address]
   depends_on         = [time_sleep.wait_for_mini_ad]
 }
