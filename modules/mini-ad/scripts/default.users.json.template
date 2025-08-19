@@ -27,7 +27,7 @@
       "password": ${sysadmin_password}",
       "uidNumber": 10002,
       "gidNumber": 10001,
-      "primaryGroup": "${lower(NETBIOS)}-users",
+      "primaryGroup": "${lower(NETBIOS)}-users", 
       "extraGroups": ["india"]
     }
   ]
