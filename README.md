@@ -6,6 +6,8 @@ Using **Terraform, Samba 4, and automated configuration scripts**, this deployme
 
 This solution is ideal for **labs, demos, and development environments** where Active Directory integration is needed without the cost and provisioning time of Azure AD Domain Services. It is **not intended for production use**, but provides a complete, repeatable environment for testing AD-connected workloads in Azure.  
 
+See the `Limitations` sections for a list of caveats.
+
 ![Azure diagram](azure-mini-directory.png)
 
 ---
