@@ -15,14 +15,14 @@
 # Create Network Interface (NIC) for the Linux VM
 # --------------------------------------------------------------------------------------------------
 resource "azurerm_network_interface" "mini_ad_vm_nic" {
-  name                = "mini-ad-nic"                      # NIC resource name
-  location            = azurerm_resource_group.ad.location # Same region as resource group
-  resource_group_name = azurerm_resource_group.ad.name     # Same resource group
+  name                = "mini-ad-nic"                           # NIC resource name
+  location            = var.location                            # Same region as resource group
+  resource_group_name = azurerm_resource_group.mini_ad_rg.name  # Same resource group
 
   # NIC IP configuration (internal/private use only)
   ip_configuration {
     name                          = "internal"                  # Config label
-    subnet_id                     = azurerm_subnet.vm_subnet.id # Attach NIC to VM subnet
+    subnet_id                     = var.subnet_id               # Attach NIC to VM subnet
     private_ip_address_allocation = "Dynamic"                   # Auto-assign private IP
   }
 }
