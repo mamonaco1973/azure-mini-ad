@@ -53,17 +53,17 @@ cd ..
 # - Discovers the Key Vault name from Azure (matching "ad-key-vault*") and passes
 #   it into Terraform as a variable.
 # --------------------------------------------------------------------------------------------------
-cd 02-servers
+# cd 02-servers
 
-# Query Azure for the Key Vault created in Phase 1 (first matching "ad-key-vault*")
-vault=$(az keyvault list \
-  --resource-group mini-ad-rg \
-  --query "[?starts_with(name, 'ad-key-vault')].name | [0]" \
-  --output tsv)
+# # Query Azure for the Key Vault created in Phase 1 (first matching "ad-key-vault*")
+# vault=$(az keyvault list \
+#   --resource-group mini-ad-rg \
+#   --query "[?starts_with(name, 'ad-key-vault')].name | [0]" \
+#   --output tsv)
 
-echo "NOTE: Key vault for secrets is $vault"
+# echo "NOTE: Key vault for secrets is $vault"
 
-terraform init   # Initialize Terraform in server layer
-terraform apply -var="vault_name=$vault" -auto-approve   # Deploy VM, configure Samba AD
+# terraform init   # Initialize Terraform in server layer
+# terraform apply -var="vault_name=$vault" -auto-approve   # Deploy VM, configure Samba AD
 
-cd ..
+# cd ..
