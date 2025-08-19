@@ -1,6 +1,6 @@
 module "mini_ad" {
   source            = "../modules/mini-ad"
-  location          = var.location
+  location          = var.resource_group_location
   netbios           = var.netbios
   vnet_id           = azurerm_virtual_network.ad_vnet.id
   realm             = var.realm

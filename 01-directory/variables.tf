@@ -44,9 +44,3 @@ variable "user_base_dn" {
   type        = string
   default     = "CN=Users,DC=mcloud,DC=mikecloud,DC=com"
 }
-
-
-variable "location" {
-  description = "Azure region where resources will be created."
-  type        = string
-}
