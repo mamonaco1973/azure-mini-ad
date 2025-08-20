@@ -271,6 +271,7 @@ EOF
 
     # Add extra group memberships
     for grp in $EXTRA_GROUPS; do
+        echo "Adding user $USERNAME to group $grp" >> /root/ad_user_attributes.log 2>&1
         samba-tool group addmembers "$grp" "$USERNAME" >> /root/ad_user_attributes.log 2>&1
     done
 done
