@@ -18,7 +18,7 @@
       "uidNumber": 10001,
       "gidNumber": 10001,
       "primaryGroup": "${lower(NETBIOS)}-users",
-      "extraGroups": ["us"]
+      "extraGroups": ["us","Domain Admins"],
     },
     {
       "username": "sysadmin-india",
@@ -28,7 +28,7 @@
       "uidNumber": 10002,
       "gidNumber": 10001,
       "primaryGroup": "${lower(NETBIOS)}-users", 
-      "extraGroups": ["india"]
+      "extraGroups": ["india","Domain Admins"]
     }
   ]
 }
