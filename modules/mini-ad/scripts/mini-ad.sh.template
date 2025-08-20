@@ -156,7 +156,7 @@ kdestroy || true
 # Create a day-to-day Admin user with Domain Admin privileges, if needed
 #--------------------------------------------------------------------
 if ! samba-tool user show Admin >/dev/null 2>&1; then
-  samba-tool user create Admin "${ADMIN_USER_PASS}"
+  samba-tool user create Admin "${ADMIN_USER_PASS}"  --description="MINI-AD MANAGED - DO NOT DELETE"
   samba-tool group addmembers "Domain Admins" Admin
 fi
 
