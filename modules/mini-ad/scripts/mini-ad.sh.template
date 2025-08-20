@@ -225,7 +225,6 @@ jq -c '.users[]' "$SEED_FILE" | while read -r user; do
     UID_NUMBER=$(echo "$user" | jq -r .uidNumber)
     GID_NUMBER=$(echo "$user" | jq -r .gidNumber)
     PRIMARY_GROUP=$(echo "$user" | jq -r .primaryGroup)
-    EXTRA_GROUPS=$(echo "$user" | jq -r '.extraGroups[]?')
 
     DISPLAYNAME="$GIVENNAME $SURNAME"
     EMAIL="$USERNAME@$DNS_ZONE"
@@ -269,8 +268,8 @@ msSFU30NisDomain: $NETBIOS
 EOF
     fi
 
-    # Add extra group memberships
-    for grp in $EXTRA_GROUPS; do
+    # Add extra group memberships (safe with spaces like "Domain Admins")
+    echo "$user" | jq -r '.extraGroups[]?' | while IFS= read -r grp; do
         echo "Adding user $USERNAME to group $grp" >> /root/ad_user_attributes.log 2>&1
         samba-tool group addmembers "$grp" "$USERNAME" >> /root/ad_user_attributes.log 2>&1
     done
