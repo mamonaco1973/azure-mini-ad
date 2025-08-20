@@ -13,7 +13,7 @@ module "mini_ad" {
   netbios           = var.netbios                                # NetBIOS domain name (e.g., MCLOUD)
   vnet_id           = azurerm_virtual_network.ad_vnet.id         # Virtual Network where the AD will reside
   realm             = var.realm                                  # Kerberos realm (usually UPPERCASE DNS domain)
-  #users_json        = local.users_json                           # JSON blob of users and passwords (built below)
+  users_json        = local.users_json                           # JSON blob of users and passwords (built below)
   user_base_dn      = var.user_base_dn                           # Base DN for user accounts in LDAP
   ad_admin_password = random_password.admin_password.result      # Randomized AD administrator password
   dns_zone          = var.dns_zone                               # DNS zone (e.g., mcloud.mikecloud.com)
