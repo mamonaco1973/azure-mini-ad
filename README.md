@@ -36,11 +36,11 @@ While the mini-AD deployment provides a functional and cost-effective Active Dir
 
 ## Prerequisites  
 
-* [An Azure Subscription](https://azure.microsoft.com/free/)  
-* [Install Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)  
-* [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)  
+* [An Azure Account](https://portal.azure.com/)
+* [Install AZ CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) 
+* [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)
 
-If this is your first time watching our content, start with this video: **Azure + Terraform Easy Setup**, which covers Terraform, Azure CLI, and Key Vault basics.  
+If this is your first time watching our content, we recommend starting with this video: [Azure + Terraform: Easy Setup](https://www.youtube.com/watch?v=wwi3kVgYNOk). It provides a step-by-step guide to properly configure Terraform, Packer, and the AZ CLI.
 
 ---
 
