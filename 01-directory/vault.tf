@@ -26,13 +26,13 @@ resource "random_string" "key_vault_suffix" {
 # Create the Key Vault resource
 # --------------------------------------------------------------------------------------------------
 resource "azurerm_key_vault" "ad_key_vault" {
-  name                      = "ad-key-vault-${random_string.key_vault_suffix.result}" # Vault name
-  resource_group_name       = azurerm_resource_group.ad.name                          # Place in same RG as AD infra
-  location                  = azurerm_resource_group.ad.location                      # Same region
-  sku_name                  = "standard"                                              # Standard SKU (sufficient for secrets)
-  tenant_id                 = data.azurerm_client_config.current.tenant_id            # Azure AD tenant ID
-  purge_protection_enabled  = false                                                   # Allow permanent delete (lab use only)
-  enable_rbac_authorization = true                                                    # Enforce RBAC (recommended)
+  name                       = "ad-key-vault-${random_string.key_vault_suffix.result}" # Vault name
+  resource_group_name        = azurerm_resource_group.ad.name                          # Place in same RG as AD infra
+  location                   = azurerm_resource_group.ad.location                      # Same region
+  sku_name                   = "standard"                                              # Standard SKU (sufficient for secrets)
+  tenant_id                  = data.azurerm_client_config.current.tenant_id            # Azure AD tenant ID
+  purge_protection_enabled   = false                                                   # Allow permanent delete (lab use only)
+  rbac_authorization_enabled = true                                                    # Enforce RBAC (recommended)
 }
 
 # --------------------------------------------------------------------------------------------------
