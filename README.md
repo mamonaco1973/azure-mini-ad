@@ -122,7 +122,7 @@ The domain controller provisions **sample users and groups** via Terraform templ
 
 ### Log into Windows Instance  
 
-When the Windows instance boots, the [userdata script](02-servers/scripts/userdata.ps1) executes the following tasks:  
+When the Windows instance boots, the [ad_join script](02-servers/scripts/ad_join.ps1.template) executes the following tasks:  
 
 - Install Active Directory Administrative Tools  
 - Install AWS CLI  
@@ -138,7 +138,7 @@ Administrator credentials are stored in the `admin_ad_credentials` secret.
 
 ### Log into Linux Instance  
 
-When the Linux instance boots, the [userdata script](02-servers/scripts/userdata.sh) runs the following tasks:  
+When the Linux instance boots, the [custom data script](02-servers/scripts/custom_data.sh) runs the following tasks:  
 
 - Update OS and install required packages  
 - Install AWS CLI  
