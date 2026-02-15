@@ -119,8 +119,8 @@ data "azurerm_storage_account_sas" "script_sas" {
     file  = false
   }
 
-  start  =    formatdate("YYYY-MM-DD'T'HH:mm:ss'Z'",timeadd(timestamp(), "-24h"))
-  expiry =   formatdate("YYYY-MM-DD'T'HH:mm:ss'Z'",timeadd(timestamp(), "72h"))
+  start  = formatdate("YYYY-MM-DD'T'HH:mm:ss'Z'", timeadd(timestamp(), "-24h"))
+  expiry = formatdate("YYYY-MM-DD'T'HH:mm:ss'Z'", timeadd(timestamp(), "72h"))
 
   permissions {
     read    = true

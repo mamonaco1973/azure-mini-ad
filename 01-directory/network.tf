@@ -39,15 +39,6 @@ resource "azurerm_subnet" "mini_ad_subnet" {
   default_outbound_access_enabled = false
 }
 
-resource "azurerm_subnet" "bastion_subnet" {
-
-  name                 = "AzureBastionSubnet"
-  resource_group_name  = azurerm_resource_group.ad.name
-  virtual_network_name = azurerm_virtual_network.ad_vnet.name
-  address_prefixes     = ["10.0.1.0/25"]
-}
-
-
 # ==============================================================================
 # VM Network Security Group
 # ------------------------------------------------------------------------------
@@ -120,10 +111,10 @@ resource "azurerm_public_ip" "nat_gateway_pip" {
 # NAT Gateway resource
 resource "azurerm_nat_gateway" "vm_nat_gateway" {
 
-  name                = "vm-nat-gateway"
-  location            = azurerm_resource_group.ad.location
-  resource_group_name = azurerm_resource_group.ad.name
-  sku_name            = "Standard"
+  name                    = "vm-nat-gateway"
+  location                = azurerm_resource_group.ad.location
+  resource_group_name     = azurerm_resource_group.ad.name
+  sku_name                = "Standard"
   idle_timeout_in_minutes = 10
 }
 

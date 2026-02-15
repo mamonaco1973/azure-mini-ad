@@ -3,13 +3,12 @@
 # ------------------------------------------------------------------------------
 # Provisions Ubuntu VM with password authentication.
 # Stores credentials in Key Vault and assigns managed identity.
+# Includes Public IP with DNS label based on vm_suffix (old association pattern).
 # ==============================================================================
 
 
 # ------------------------------------------------------------------------------
 # Random Password: ubuntu
-# ------------------------------------------------------------------------------
-# Generates secure 24-character password.
 # ------------------------------------------------------------------------------
 resource "random_password" "ubuntu_password" {
 
@@ -22,8 +21,6 @@ resource "random_password" "ubuntu_password" {
 # ------------------------------------------------------------------------------
 # Key Vault Secret: ubuntu credentials
 # ------------------------------------------------------------------------------
-# Stores username/password as JSON object.
-# ------------------------------------------------------------------------------
 resource "azurerm_key_vault_secret" "ubuntu_secret" {
 
   name = "ubuntu-credentials"
@@ -35,6 +32,24 @@ resource "azurerm_key_vault_secret" "ubuntu_secret" {
 
   key_vault_id = data.azurerm_key_vault.ad_key_vault.id
   content_type = "application/json"
+}
+
+
+# ------------------------------------------------------------------------------
+# Public IP
+# ------------------------------------------------------------------------------
+# Creates public IP with DNS label derived from vm_suffix.
+# ------------------------------------------------------------------------------
+resource "azurerm_public_ip" "linux_vm_pip" {
+
+  name                = "linux-ad-pip-${random_string.vm_suffix.result}"
+  location            = data.azurerm_resource_group.ad.location
+  resource_group_name = data.azurerm_resource_group.ad.name
+
+  allocation_method = "Static"
+  sku               = "Standard"
+
+  domain_name_label = "linux-ad-${random_string.vm_suffix.result}"
 }
 
 
@@ -58,13 +73,24 @@ resource "azurerm_network_interface" "linux_vm_nic" {
 
 
 # ------------------------------------------------------------------------------
+# Public IP Association
+# ------------------------------------------------------------------------------
+
+resource "azurerm_network_interface_public_ip_address_association" "linux_vm_pip_assoc" {
+
+  network_interface_id  = azurerm_network_interface.linux_vm_nic.id
+  ip_configuration_name = "internal"
+  public_ip_address_id  = azurerm_public_ip.linux_vm_pip.id
+}
+
+# ------------------------------------------------------------------------------
 # Linux Virtual Machine
 # ------------------------------------------------------------------------------
 # Deploys Ubuntu 24.04 LTS VM.
 # ------------------------------------------------------------------------------
 resource "azurerm_linux_virtual_machine" "linux_ad_instance" {
 
-  name                = "linux-ad-${random_string.vm_suffix.result}"
+  name = "linux-ad-${random_string.vm_suffix.result}"
 
   location            = data.azurerm_resource_group.ad.location
   resource_group_name = data.azurerm_resource_group.ad.name
@@ -90,9 +116,7 @@ resource "azurerm_linux_virtual_machine" "linux_ad_instance" {
     version   = "latest"
   }
 
-  # Cloud-init configuration
-  custom_data = base64encode(templatefile(
-    "./scripts/custom_data.sh",
+  custom_data = base64encode(templatefile("./scripts/custom_data.sh",
     {
       vault_name  = data.azurerm_key_vault.ad_key_vault.name
       domain_fqdn = var.dns_zone
@@ -102,6 +126,10 @@ resource "azurerm_linux_virtual_machine" "linux_ad_instance" {
   identity {
     type = "SystemAssigned"
   }
+
+  depends_on = [
+    azurerm_network_interface_public_ip_address_association.linux_vm_pip_assoc
+  ]
 }
 
 
@@ -115,5 +143,5 @@ resource "azurerm_role_assignment" "vm_lnx_key_vault_secrets_user" {
   scope                = data.azurerm_key_vault.ad_key_vault.id
   role_definition_name = "Key Vault Secrets User"
 
-  principal_id =    azurerm_linux_virtual_machine.linux_ad_instance.identity[0].principal_id
+  principal_id = azurerm_linux_virtual_machine.linux_ad_instance.identity[0].principal_id
 }
