@@ -3,8 +3,7 @@
 # ------------------------------------------------------------------------------
 # Provisions Windows Server VM.
 # Generates admin credentials and stores them in Key Vault.
-# Now includes Public IP + DNS label derived from vm_suffix using the *old*
-# NIC IP configuration pattern (separate association resource).
+# Includes Public IP + DNS label derived from vm_suffix.
 # ==============================================================================
 
 
@@ -76,18 +75,8 @@ resource "azurerm_network_interface" "windows_vm_nic" {
     name                          = "internal"
     subnet_id                     = data.azurerm_subnet.vm_subnet.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.windows_vm_pip.id
   }
-}
-
-
-# ------------------------------------------------------------------------------
-# Public IP Association
-# ------------------------------------------------------------------------------
-resource "azurerm_network_interface_public_ip_address_association" "windows_vm_pip_assoc" {
-
-  network_interface_id  = azurerm_network_interface.windows_vm_nic.id
-  ip_configuration_name = "internal"
-  public_ip_address_id  = azurerm_public_ip.windows_vm_pip.id
 }
 
 
