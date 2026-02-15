@@ -84,7 +84,5 @@ echo ""
 printf "%-28s %s\n" "NOTE: Windows RDP Host:" "${windows_fqdn}"
 printf "%-28s %s\n" "NOTE: Linux SSH Host:"   "${linux_fqdn}"
 
-echo ""
-printf "%-28s %s\n" "NOTE:" "Validation complete."
-echo ""
+"
 
