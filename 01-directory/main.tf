@@ -1,42 +1,66 @@
-# Configure the AzureRM provider
+# ==============================================================================
+# Azure Provider Configuration
+# ------------------------------------------------------------------------------
+# Configures AzureRM provider and feature behavior.
+# Enables Key Vault purge and allows RG deletion with resources.
+# ==============================================================================
+
 provider "azurerm" {
-  # Enables the default features of the provider
+
   features {
+
+    # Key Vault feature configuration.
     key_vault {
       purge_soft_delete_on_destroy    = true
       recover_soft_deleted_key_vaults = false
     }
 
+    # Resource group feature configuration.
     resource_group {
       prevent_deletion_if_contains_resources = false
     }
   }
 }
 
-# Data source to fetch details of the primary subscription
+
+# ==============================================================================
+# Data Sources
+# ------------------------------------------------------------------------------
+# Retrieves subscription and current client configuration details.
+# ==============================================================================
+
 data "azurerm_subscription" "primary" {}
 
-# Data source to fetch the details of the current Azure client
 data "azurerm_client_config" "current" {}
 
-# Define variables for resource group name and location
+
+# ==============================================================================
+# Variables
+# ------------------------------------------------------------------------------
+# Defines resource group name and deployment region.
+# ==============================================================================
 
 variable "resource_group_name" {
-  description = "The name of the Azure resource group"
+  description = "Azure resource group name."
   type        = string
   default     = "mcloud-project-rg"
 }
 
 variable "resource_group_location" {
-  description = "The Azure region where the resource group will be created"
+  description = "Azure region for resource group."
   type        = string
   default     = "Central US"
 }
 
-# Define a resource group for all resources
+
+# ==============================================================================
+# Resource Group
+# ------------------------------------------------------------------------------
+# Creates resource group to contain all AD-related resources.
+# ==============================================================================
+
 resource "azurerm_resource_group" "ad" {
-  name     = var.resource_group_name     # Name of the resource group from variable
-  location = var.resource_group_location # Location from variable
+
+  name     = var.resource_group_name
+  location = var.resource_group_location
 }
-
-

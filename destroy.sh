@@ -1,27 +1,25 @@
 #!/bin/bash
-# ==================================================================================================
-# Destroy Script for Mini Active Directory Deployment (Azure)
-# Purpose:
-#   - Tears down the Mini Active Directory environment in reverse order of deployment.
-#   - Ensures servers (AD VM + supporting resources) are destroyed before the directory layer (Key Vault).
-#   - Automates discovery of the Key Vault name to cleanly remove all resources.
+# ==============================================================================
+# Mini Active Directory Destroy Script (Azure)
+# ------------------------------------------------------------------------------
+# Tears down Mini AD environment in reverse deployment order:
+#   1. Server layer (VM, networking, role assignments).
+#   2. Directory layer (Key Vault and base infrastructure).
 #
-# Notes:
-#   - Use with caution: This script will **permanently delete all deployed resources**.
-#   - Order matters:
-#       1. Server layer destroyed first (VM, networking, role assignments).
-#       2. Directory layer destroyed last (Key Vault, base infra).
-#   - Assumes `az` (Azure CLI) and `terraform` are installed and authenticated.
-# ==================================================================================================
+# WARNING:
+#   - Permanently deletes all deployed resources.
+#   - Requires Azure CLI and Terraform installed and authenticated.
+# ==============================================================================
 
-set -e  # Exit immediately if any command fails
+set -e
 
-# --------------------------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
 # Phase 1: Destroy Server Layer
-# - Destroys the Samba-based AD Domain Controller VM and dependent resources.
-# - Retrieves the Key Vault name created in Phase 1 of deployment to ensure Terraform
-#   can clean up associated secrets and references.
-# --------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Removes Samba AD VM and dependent resources.
+# Discovers Key Vault name for Terraform variable input.
+# ------------------------------------------------------------------------------
 cd 02-servers
 
 vault=$(az keyvault list \
@@ -31,19 +29,21 @@ vault=$(az keyvault list \
 
 echo "NOTE: Key vault for secrets is $vault"
 
-terraform init   # Initialize Terraform working directory (re-download providers/modules if needed)
-terraform destroy -var="vault_name=$vault" -auto-approve   # Destroy VM and dependent resources
+terraform init
+terraform destroy -var="vault_name=$vault" -auto-approve
 
 cd ..
 
-# --------------------------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
 # Phase 2: Destroy Directory Layer
-# - Removes foundational resources such as Key Vault and resource group–scoped roles.
-# - This must run after servers are removed, since they may depend on secrets stored in Key Vault.
-# --------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Removes Key Vault and foundational AD infrastructure.
+# Must run after server layer is destroyed.
+# ------------------------------------------------------------------------------
 cd 01-directory
 
 terraform init
-terraform destroy -auto-approve   # Destroy Key Vault and supporting resources
+terraform destroy -auto-approve
 
 cd ..
