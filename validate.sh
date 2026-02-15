@@ -76,28 +76,15 @@ echo "Mini-AD Quick Start - Validation Output (Azure)"
 echo "============================================================================"
 echo ""
 
-echo "NOTE: Resource Group: ${RESOURCE_GROUP}"
-
-if [ -n "${vault_name}" ] && [ "${vault_name}" != "None" ]; then
-  echo "NOTE: Key Vault:      ${vault_name}"
-else
-  echo "WARN: Key Vault not found (prefix: ${KEYVAULT_PREFIX})"
-fi
+printf "%-28s %s\n" "NOTE: Resource Group:" "${RESOURCE_GROUP}"
+printf "%-28s %s\n" "NOTE: Key Vault:"      "${vault_name}"
 
 echo ""
 
-if [ -n "${windows_fqdn}" ] && [ "${windows_fqdn}" != "None" ]; then
-  echo "NOTE: Windows RDP Host FQDN: ${windows_fqdn}"
-else
-  echo "WARN: Windows host public FQDN not found (label prefix: ${WIN_LABEL_PREFIX})"
-fi
-
-if [ -n "${linux_fqdn}" ] && [ "${linux_fqdn}" != "None" ]; then
-  echo "NOTE: Linux SSH Host FQDN:   ${linux_fqdn}"
-else
-  echo "WARN: Linux host public FQDN not found (label prefix: ${LINUX_LABEL_PREFIX})"
-fi
+printf "%-28s %s\n" "NOTE: Windows RDP Host:" "${windows_fqdn}"
+printf "%-28s %s\n" "NOTE: Linux SSH Host:"   "${linux_fqdn}"
 
 echo ""
-echo "NOTE: Validation complete."
+printf "%-28s %s\n" "NOTE:" "Validation complete."
 echo ""
+
