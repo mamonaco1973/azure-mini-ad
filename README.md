@@ -1,171 +1,157 @@
-# Azure Mini Active Directory
+# Mini Active Directory on Azure
 
-This project is a follow-up to our full **Azure Active Directory Domain Services (AADDS)** project. While managed AD services are well-suited for production, they can be expensive for prototyping and require long provisioning times. The **“mini-ad”** approach provides a faster, lower-cost alternative that delivers a fully functional Active Directory environment that builds much quicker.
+A small, fast, low-cost **Active Directory** domain for labs: a **Samba 4**
+domain controller on one Azure VM, built much more quickly than Microsoft
+Entra Domain Services, with a Linux and a Windows VM that join the domain at
+boot. It's the follow-up to our Entra Domain Services project, and the base
+that the other Azure mini-AD projects build on. Not for production.
 
-Using **Terraform, Samba 4, and automated configuration scripts**, this deployment provisions an **Ubuntu-based Azure VM** acting as both a **Domain Controller and DNS server**. It integrates into a custom **Azure Virtual Network (VNet)** with secure subnets, **Network Security Groups (NSGs)**, **Azure Bastion** for remote access, and **Azure Key Vault** for credential management. Additional **Windows and Linux VMs** are deployed and automatically join the domain at boot, enabling seamless AD authentication across platforms.  
+| Piece | Where | Role |
+|---|---|---|
+| **mini-AD** (Samba DC) | `mini-ad-subnet` (10.0.0.128/25) | domain `mcloud.mikecloud.com` / `MCLOUD`: users, groups, POSIX IDs, DNS, Kerberos; built by [`module-azure-mini-ad`](https://github.com/mamonaco1973/module-azure-mini-ad) |
+| **linux-ad VM** | `vm-subnet` (10.0.0.0/25) | Ubuntu 24.04, `Standard_B1s`; joins with `realm` and SSSD; SSH with AD passwords |
+| **win-ad VM** | `vm-subnet` | Windows Server 2022 Datacenter, `Standard_DS1_v2`; joins the domain; RSAT for managing users |
+| **Key Vault** | `mcloud-project-rg` | `ad-key-vault-<suffix>`: AD admin, user and VM passwords; read by the VMs' managed identities |
+| **Blob Storage** | `mcloud-project-rg` | serves the Windows join script to the Custom Script Extension |
+| **NAT gateway** | both subnets | outbound internet for the VNet |
 
-This solution is ideal for **labs, demos, and development environments** where Active Directory integration is needed without the cost and provisioning time of Azure AD Domain Services. It is **not intended for production use**, but provides a complete, repeatable environment for testing AD-connected workloads in Azure.  
+## Architecture
 
-See the `Limitations` sections for a list of caveats.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="architecture-dark.svg">
+  <img alt="A Samba 4 domain controller runs in mini-ad-subnet; both subnets reach the internet through a NAT gateway. An Ubuntu VM and a Windows Server 2022 VM read the AD admin password from Key Vault with their managed identities and join the domain, the Linux one with realm and SSSD, the Windows one through a join script the Custom Script Extension downloads from Blob Storage. An SSH client reaches the Linux VM and an RDP client the Windows one, signing in with AD accounts." src="architecture-light.svg">
+</picture>
 
----
+Regenerate with `python3 make_diagram.py`.
 
-![Azure diagram](azure-mini-directory.png)
+- **`01-directory/`**: the resource group (`mcloud-project-rg`), the VNet
+  (`ad-vnet`, 10.0.0.0/23) with `vm-subnet` and `mini-ad-subnet`, the NAT
+  gateway, `vm-nsg`, the Key Vault and AD passwords, and the DC, with users
+  and POSIX attributes from `scripts/users.json.template`. Azure Bastion is
+  optional (`bastion_support`, off by default).
+- **`02-servers/`**: the Linux and Windows VMs with their managed identities
+  and Key Vault access, and the Blob Storage account for the Windows join
+  script.
 
+## How the members join
 
-## Limitations  
+1. **Linux**: installs SSSD, realmd and the Azure CLI, signs in with its
+   managed identity, reads `admin-ad-credentials` from Key Vault, and joins
+   with `realm join`. SSSD is set for short names and the POSIX IDs stored in
+   AD; home directories are created on first login; `linux-admins` get
+   passwordless sudo.
+2. **Windows**: the Custom Script Extension downloads `ad-join.ps1` from Blob
+   Storage with a read-only SAS. The script installs RSAT and the Azure CLI,
+   reads the same secret with the VM's managed identity, joins with
+   `Add-Computer`, adds `MCLOUD\mcloud-users` to Remote Desktop Users, and
+   reboots. Its log is `C:\WindowsAzure\Logs\ad-join.log`.
 
-While the mini-AD deployment provides a functional and cost-effective Active Directory environment for labs, demos, and development, it does not include many of the advanced features found in **Azure AD Domain Services** or **Windows Server AD on Azure**:  
+| User | Groups | sudo on Linux |
+|---|---|---|
+| jsmith | mcloud-users, us, linux-admins, Domain Admins | yes |
+| edavis | mcloud-users, us | no |
+| rpatel | mcloud-users, india, linux-admins, Domain Admins | yes |
+| akumar | mcloud-users, india | no |
 
-### Issues Related to PaaS vs IaaS (Operational & Platform-Level)  
-- **High Availability & Multi-Region** – Managed AD provisions redundant DCs automatically; mini-AD is a single VM.  
-- **Automated Backups & Snapshots** – Managed AD handles backups; mini-AD requires manual snapshots or Recovery Services Vault.  
-- **Automatic Patching** – Managed AD auto-patches OS and AD services; mini-AD requires manual updates.  
-- **Security Hardening & Compliance** – Managed AD is pre-hardened for Azure compliance; mini-AD depends on your configuration.  
-- **24/7 Microsoft Support** – Managed AD includes support; mini-AD requires you to manage everything.  
-- **Monitoring & Metrics** – Managed AD integrates with Azure Monitor; mini-AD requires manual monitoring setup.  
+| Group | gidNumber |
+|---|---|
+| mcloud-users | 10001 |
+| us | 10002 |
+| india | 10003 |
+| linux-admins | 10004 |
 
-### Functional Differences (AD Feature Gaps & Compatibility)  
-- **Azure Service Integration** – Managed AD integrates with AVD, FSLogix, SQL MI, and more; mini-AD requires extra setup.  
-- **Group Policy Objects (GPOs)** – Managed AD supports full GPOs; Samba GPO support is limited and lacks replication.  
-- **PowerShell AD Cmdlets** – Managed AD supports AD Web Services; Samba mini-AD lacks native cmdlet support.  
-- **Kerberos Trusts with On-Prem AD** – Managed AD supports trusts; mini-AD requires manual Kerberos/LDAP configuration.  
-- **No Entra ID Support** – Mini-AD cannot integrate with Microsoft Entra ID (Azure AD). This prevents seamless single sign-on (SSO), conditional access, and direct integration with Microsoft 365 or modern identity-driven security features, which limits its usefulness in hybrid identity scenarios.  
+## What mini-AD doesn't do
 
----
+Compared with Microsoft Entra Domain Services, a single Samba DC on a VM
+gives up:
 
-## Prerequisites  
+- **Operations**: no replica set or zone redundancy, no automatic backups or
+  patching, no Microsoft-managed hardening, support, or Azure Monitor
+  integration.
+- **Features**: no built-in sync from Entra ID; limited GPO support without
+  replication; no AD Web Services, so many AD PowerShell cmdlets don't work;
+  trusts with an on-premises AD need manual setup.
+
+## Network security
+
+```
+internet ─22, 3389─▶ vm-subnet (linux-ad VM, win-ad VM)
+```
+
+`vm-nsg` on `vm-subnet` allows 22 and 3389 from anywhere; every login still
+needs an AD account. The DC has no public address.
+
+## Prerequisites
 
 * [An Azure Account](https://portal.azure.com/)
-* [Install AZ CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) 
-* [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)
+* [Install AZ CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
+* [Install Terraform](https://developer.hashicorp.com/terraform/install)
+* [Install jq](https://jqlang.github.io/jq/download/)
 
-If this is your first time watching our content, we recommend starting with this video: [Azure + Terraform: Easy Setup](https://www.youtube.com/watch?v=wwi3kVgYNOk). It provides a step-by-step guide to properly configure Terraform, Packer, and the AZ CLI.
+`check_env.sh` expects a service principal in `ARM_CLIENT_ID`,
+`ARM_CLIENT_SECRET`, `ARM_SUBSCRIPTION_ID` and `ARM_TENANT_ID`. If this is
+your first time watching our content, we recommend starting with this video:
+[Azure + Terraform: Easy Setup](https://www.youtube.com/watch?v=wwi3kVgYNOk).
 
----
-
-## Download this Repository  
+## Deploy
 
 ```bash
 git clone https://github.com/mamonaco1973/azure-mini-ad.git
 cd azure-mini-ad
-```  
+./apply.sh       # 1: VNet + mini-AD + Key Vault  2: Linux and Windows VMs
+```
 
----
+Everything deploys to Central US. After `apply.sh` finishes, the Linux VM
+needs a few minutes to join the domain, and the Windows VM longer, because
+it joins and then reboots. `apply.sh` ends by running `validate.sh`:
 
-## Build the Code  
+```
+============================================================================
+Mini-AD Quick Start - Validation Output (Azure)
+============================================================================
 
-Run [check_env](check_env.sh) to validate your environment, then run [apply](apply.sh) to provision the infrastructure.  
+NOTE: Resource Group:        mcloud-project-rg
+NOTE: Key Vault:             ad-key-vault-a1b2c3d4
+NOTE: Windows RDP Host:      win-ad-a1b2c3.centralus.cloudapp.azure.com
+NOTE: Linux SSH Host:        linux-ad-a1b2c3.centralus.cloudapp.azure.com
+```
 
-```bash
-develop-vm:~/azure-mini-ad$ ./apply.sh
-NOTE: Validating that required commands are in PATH.
-NOTE: az is found in the current PATH.
-NOTE: terraform is found in the current PATH.
-NOTE: All required commands are available.
-NOTE: Checking Azure CLI connection.
-NOTE: Successfully logged into Azure.
-Initializing provider plugins...
-Terraform has been successfully initialized!
-```  
+## Try it
 
----
+1. Get a user's password:
 
-### Build Results  
+   ```bash
+   vault=$(az keyvault list -g mcloud-project-rg --query "[?starts_with(name, 'ad-key-vault')].name | [0]" -o tsv)
+   az keyvault secret show --vault-name "$vault" --name jsmith-ad-credentials \
+     --query value -o tsv | jq -r .password
+   ```
 
-When the deployment completes, the following resources are created:  
+2. RDP to the **Windows RDP Host** as `MCLOUD\jsmith`. **Active Directory
+   Users and Computers** is installed.
 
-- **Networking:**  
-  - A VNet with public and private subnets  
-  - Azure Bastion for secure RDP/SSH without public IPs  
-  - Route tables configured for AD and client communication  
+   ![Windows VM](windows.png)
 
-- **Security & Identity:**  
-  - NSGs for domain controller, Linux client, and Windows client  
-  - Azure Key Vault for credential storage (admin + user accounts)  
-  - Managed Identities for VM-to-Key Vault secret retrieval  
+3. SSH to the **Linux SSH Host** as `jsmith`. Try `id`,
+   `getent group linux-admins` and `sudo -l`.
 
-- **Active Directory Server:**  
-  - Ubuntu VM running Samba 4 as Domain Controller and DNS server  
-  - Configured Kerberos realm and NetBIOS name  
-  - Administrator credentials stored in Key Vault  
+   ![Linux VM](linux.png)
 
-- **Client Instances:**  
-  - Windows VM joined to the domain via boot-time PowerShell script  
-  - Linux VM joined to the domain with SSSD integration via custom-data script  
+## Troubleshooting
 
----
+| Symptom | Fix |
+|---|---|
+| SSH rejects every AD password | The Linux VM hasn't finished joining. Check `/var/log/cloud-init-output.log` on it. |
+| RDP rejects `MCLOUD\jsmith` | The Windows VM joins and then reboots; give it several minutes, then read `C:\WindowsAzure\Logs\ad-join.log`. |
+| `id <user>` finds nothing | The user needs `uidNumber`, `gidNumber` and `uid` set in AD. SSSD caches lookups; `sudo sss_cache -E` clears it. |
 
-### Users and Groups  
-
-The domain controller provisions **sample users and groups** via Terraform templates. These are intended for testing and demonstration.  
-
-#### Groups Created  
-
-| Group Name    | Category  | Scope     | gidNumber |
-|---------------|-----------|----------|-----------|
-| mcloud-users  | Security  | Universal | 10001 |
-| india         | Security  | Universal | 10002 |
-| us            | Security  | Universal | 10003 |
-| linux-admins  | Security  | Universal | 10004 |
-
-#### Users Created  
-
-| Username | Full Name   | uidNumber | gidNumber | Groups Joined                    |
-|----------|-------------|-----------|-----------|----------------------------------|
-| jsmith   | John Smith  | 10001     | 10001     | mcloud-users, us, linux-admins   |
-| edavis   | Emily Davis | 10002     | 10001     | mcloud-users, us                 |
-| rpatel   | Raj Patel   | 10003     | 10001     | mcloud-users, india, linux-admins|
-| akumar   | Amit Kumar  | 10004     | 10001     | mcloud-users, india              |
-
----
-
-### Log into Windows Instance  
-
-When the Windows instance boots, the [ad_join script](02-servers/scripts/ad_join.ps1.template) executes the following tasks:  
-
-- Install Active Directory Administrative Tools  
-- Install AWS CLI  
-- Join EC2 instance to Active Directory  
-- Grant RDP access to domain users  
-- Perform a final system reboot  
-
-Administrator credentials are stored in the `admin_ad_credentials` secret.
-
-![Windows EC2 Instance](windows.png)
-
----
-
-### Log into Linux Instance  
-
-When the Linux instance boots, the [custom data script](02-servers/scripts/custom_data.sh) runs the following tasks:  
-
-- Update OS and install required packages  
-- Install AWS CLI  
-- Join the Active Directory domain with SSSD  
-- Enable password authentication for AD users  
-- Configure SSSD for AD integration  
-- Grant sudo privileges to the `linux-admins` group  
-
-Linux user credentials are stored as secrets.
-
-![Linux EC2 Instance](linux.png)
-
----
-
-
----
-
-### Clean Up  
-
-When finished, remove all resources with:  
+## Teardown
 
 ```bash
-./destroy.sh
-```  
+./destroy.sh     # destroys the VMs, then the DC, VNet and Key Vault (purged)
+```
 
-This uses Terraform to delete the VNet, VMs, Key Vault, storage accounts, NSGs, and secrets.  
+## Notes
 
----
-
-⚠️ **Reminder:** This project is for **labs and development only**. Do not use it in production.  
+- **Lab only.** SSH and RDP are open to the internet, jsmith and rpatel are
+  Domain Admins, and the join uses the domain admin account. Restrict
+  `vm-nsg` and use a dedicated join account for anything more.
